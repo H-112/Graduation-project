@@ -9,6 +9,7 @@ import { UsagePanel } from "./UsagePanel";
 import { LikertPanel } from "./LikertPanel";
 import { KeywordsPanel } from "./KeywordsPanel";
 import { generateMarkdownReport, downloadMarkdown } from "@/lib/report-md";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 interface LlmReportInfo {
   label: string;
@@ -140,73 +141,7 @@ export function CompleteReportPanel({
                     <h4 className="text-sm font-semibold text-gray-900 mb-3">
                       {report.label}
                     </h4>
-                    <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-                      {content.split("\n").map((line, i) => {
-                        const trimmed = line.trim();
-                        if (!trimmed)
-                          return <div key={i} className="h-2" />;
-                        if (trimmed.startsWith("### ")) {
-                          return (
-                            <h5
-                              key={i}
-                              className="text-base font-bold text-gray-900 mt-4"
-                            >
-                              {trimmed.replace("### ", "")}
-                            </h5>
-                          );
-                        }
-                        if (trimmed.startsWith("## ")) {
-                          return (
-                            <h4
-                              key={i}
-                              className="text-lg font-bold text-gray-900 mt-5"
-                            >
-                              {trimmed.replace("## ", "")}
-                            </h4>
-                          );
-                        }
-                        if (trimmed.startsWith("# ")) {
-                          return (
-                            <h3
-                              key={i}
-                              className="text-xl font-bold text-gray-900"
-                            >
-                              {trimmed.replace("# ", "")}
-                            </h3>
-                          );
-                        }
-                        if (
-                          trimmed.startsWith("- ") ||
-                          trimmed.startsWith("* ")
-                        ) {
-                          return (
-                            <li key={i} className="ml-4 text-gray-600">
-                              {trimmed
-                                .replace(/^[*-] /, "")
-                                .replace(/\*\*(.*?)\*\*/g, "$1")}
-                            </li>
-                          );
-                        }
-                        if (trimmed === "---")
-                          return <hr key={i} className="my-3 border-gray-200" />;
-                        const cleaned = trimmed
-                          .replace(
-                            /\*\*(.*?)\*\*/g,
-                            (_, t: string) => `<strong>${t}</strong>`
-                          )
-                          .replace(
-                            /\*(.*?)\*/g,
-                            (_, t: string) => `<em>${t}</em>`
-                          );
-                        return (
-                          <p
-                            key={i}
-                            className="text-gray-600"
-                            dangerouslySetInnerHTML={{ __html: cleaned }}
-                          />
-                        );
-                      })}
-                    </div>
+                    <MarkdownRenderer content={content} />
                   </div>
                 );
               })}

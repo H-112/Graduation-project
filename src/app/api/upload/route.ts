@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import crypto from "crypto";
+import { addUploadRecord } from "@/lib/history";
 
 const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
 const RESULTS_DIR = path.join(process.cwd(), "data", "results");
@@ -37,6 +38,13 @@ export async function POST(request: NextRequest) {
 
     // 获取文件前几行预览
     const preview = await getPreview(filepath, ext);
+
+    // 记录上传历史
+    await addUploadRecord({
+      id,
+      datasetName: file.name,
+      filePath: filepath,
+    });
 
     return NextResponse.json({
       id,

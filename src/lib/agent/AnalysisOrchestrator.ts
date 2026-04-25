@@ -8,12 +8,15 @@
 
 import fs from "fs/promises";
 import path from "path";
+import crypto from "crypto";
 import type { AnalysisMode } from "../types";
 import { mcpClient } from "../mcp/McpClient";
+import { addAnalysisRecord } from "../history";
 import { FileServer } from "../mcp/servers/FileServer";
 import { StatsServer } from "../mcp/servers/StatsServer";
 import { LlmGatewayServer } from "../mcp/servers/LlmGatewayServer";
 import { NlpServer } from "../mcp/servers/NlpServer";
+import { DeepResearchServer } from "../mcp/servers/DeepResearchServer";
 import { SkillRegistry } from "./SkillRegistry";
 import { AnalysisContext } from "./AnalysisContext";
 import { ProgressEmitter } from "./ProgressEmitter";
@@ -65,12 +68,13 @@ export class AnalysisOrchestrator {
     const outDir = path.join(process.cwd(), "data", "results");
     await fs.mkdir(outDir, { recursive: true });
 
-    const encoder = new TextEncoder();
+    const analysisId = crypto.randomBytes(6).toString("hex");
 
     const stream = new ReadableStream({
       start: async (controller) => {
         const emitter = new ProgressEmitter(controller);
         const context = new AnalysisContext();
+        const startTime = Date.now();
 
         // 初始化输入
         const input: SkillInput = {
@@ -103,6 +107,18 @@ export class AnalysisOrchestrator {
           );
 
           if (!descResult && mode !== "deep_research") {
+            const duration_ms = Date.now() - startTime;
+            const apiCalls = (context.get("__apiCalls") as number) || 0;
+            await addAnalysisRecord({
+              id: analysisId,
+              datasetName: datasetName || path.basename(filePath),
+              filePath,
+              mode,
+              status: "failed",
+              error: "核心统计分析未成功完成",
+              duration_ms,
+              apiCalls,
+            });
             emitter.error("分析失败", "核心统计分析未成功完成");
             emitter.done();
             controller.close();
@@ -142,6 +158,55 @@ export class AnalysisOrchestrator {
             url: `/llm-reports/${encodeURIComponent(r.file)}`,
           }));
 
+          // Mode 2/3 量表 LLM 分析报告
+          const likertReportsRaw = context.get("likertReports") as
+            | Array<{ file: string; path: string }>
+            | undefined;
+          const likertReports = likertReportsRaw?.map((r) => ({
+            file: r.file,
+            url: `/llm-reports/${encodeURIComponent(r.file)}`,
+          }));
+
+          // Mode 3 深度研究报告
+          const deepResearchReport = context.get("deepResearchReport") as string | undefined;
+          let deepResearchReportUrl = "";
+          if (deepResearchReport) {
+            try {
+              const reportPublicDir = path.join(process.cwd(), "public", "data", "results");
+              await fs.mkdir(reportPublicDir, { recursive: true });
+              const destName = `deep_research_${path.basename(deepResearchReport)}`;
+              await fs.copyFile(deepResearchReport, path.join(reportPublicDir, destName));
+              deepResearchReportUrl = `/data/results/${destName}`;
+            } catch {
+              // 复制失败不影响
+            }
+          }
+
+          // 记录分析历史
+          const duration_ms = Date.now() - startTime;
+          const apiCalls = (context.get("__apiCalls") as number) || 0;
+          await addAnalysisRecord({
+            id: analysisId,
+            datasetName: datasetName || path.basename(filePath),
+            filePath,
+            resultUrl: resultUrl || undefined,
+            deepReportUrl: deepResearchReportUrl || undefined,
+            llmReports: llmReports?.map((r) => r.file),
+            likertReports: likertReportsRaw?.map((r) => r.file),
+            mode,
+            status: "completed",
+            duration_ms,
+            apiCalls,
+            summary: {
+              records: total_records,
+              fields: total_fields,
+              demographics: Object.keys(demographics || {}).length,
+              usageItems: Object.keys(genai_usage || {}).length,
+              likertGroups: Object.keys(likert_scales || {}).length,
+              textFields: Object.keys(text_analysis || {}).length,
+            },
+          });
+
           emitter.result({
             mode,
             resultPath: resultPath || "",
@@ -156,15 +221,27 @@ export class AnalysisOrchestrator {
               textFields: Object.keys(text_analysis || {}).length,
             },
             ...(llmReports ? { llmReports } : {}),
+            ...(likertReports ? { likertReports } : {}),
+            ...(deepResearchReportUrl ? { deepResearchReport: deepResearchReportUrl } : {}),
           });
 
           emitter.done();
           controller.close();
         } catch (err) {
-          emitter.error(
-            "分析引擎异常",
-            err instanceof Error ? err.message : String(err)
-          );
+          const errorMsg = err instanceof Error ? err.message : String(err);
+          const duration_ms = Date.now() - startTime;
+          const apiCalls = (context.get("__apiCalls") as number) || 0;
+          await addAnalysisRecord({
+            id: analysisId,
+            datasetName: datasetName || path.basename(filePath),
+            filePath,
+            mode,
+            status: "failed",
+            error: errorMsg,
+            duration_ms,
+            apiCalls,
+          });
+          emitter.error("分析引擎异常", errorMsg);
           emitter.done();
           controller.close();
         }
@@ -188,6 +265,7 @@ export class AnalysisOrchestrator {
     mcpClient.register(new StatsServer());
     mcpClient.register(new LlmGatewayServer());
     mcpClient.register(new NlpServer());
+    mcpClient.register(new DeepResearchServer());
     console.log(
       "[AnalysisOrchestrator] MCP Servers registered: " +
         mcpClient

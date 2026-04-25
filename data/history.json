@@ -1,0 +1,374 @@
+[
+  {
+    "id": "3a883a886f2e",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/913b7c4871bc.xlsx",
+    "resultUrl": "/data/results/913b7c4871bc_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "913b7c4871bc_llm_01.md",
+      "913b7c4871bc_llm_02.md",
+      "913b7c4871bc_comprehensive.md"
+    ],
+    "likertReports": [
+      "913b7c4871bc_likert_analysis.json",
+      "913b7c4871bc_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 118664,
+    "apiCalls": 6,
+    "timestamp": "2026-04-25T09:23:48.879Z"
+  },
+  {
+    "id": "a8205bbf7b2b",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/bf046ba043c2.xlsx",
+    "resultUrl": "/data/results/bf046ba043c2_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "bf046ba043c2_llm_01.md",
+      "bf046ba043c2_llm_02.md",
+      "bf046ba043c2_comprehensive.md"
+    ],
+    "likertReports": [
+      "bf046ba043c2_likert_analysis.json",
+      "bf046ba043c2_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 119451,
+    "apiCalls": 6,
+    "timestamp": "2026-04-25T09:17:08.339Z"
+  },
+  {
+    "id": "93809bfbf226",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/c69801ee6a3f.xlsx",
+    "resultUrl": "/data/results/c69801ee6a3f_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "c69801ee6a3f_llm_01.md",
+      "c69801ee6a3f_llm_02.md",
+      "c69801ee6a3f_llm_03.md",
+      "c69801ee6a3f_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 183778,
+    "apiCalls": 5,
+    "timestamp": "2026-04-25T09:11:16.173Z"
+  },
+  {
+    "id": "151ee7329b9e",
+    "type": "upload",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/151ee7329b9e.xlsx",
+    "status": "pending",
+    "timestamp": "2026-04-25T09:06:33.141Z"
+  },
+  {
+    "id": "3961aa75af74",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/5bf207f14dee.xlsx",
+    "resultUrl": "/data/results/deep_research_report.md",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "5bf207f14dee_llm_01.md",
+      "5bf207f14dee_llm_02.md",
+      "5bf207f14dee_llm_03.md",
+      "5bf207f14dee_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 186520,
+    "apiCalls": 5,
+    "timestamp": "2026-04-25T08:58:07.499Z"
+  },
+  {
+    "id": "36a6b0ba612b",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/0c2780df7339.xlsx",
+    "resultUrl": "/data/results/0c2780df7339_analysis.json",
+    "llmReports": [
+      "0c2780df7339_llm_01.md",
+      "0c2780df7339_llm_02.md",
+      "0c2780df7339_comprehensive.md"
+    ],
+    "likertReports": [
+      "0c2780df7339_likert_analysis.json",
+      "0c2780df7339_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 77112,
+    "apiCalls": 5,
+    "timestamp": "2026-04-25T08:54:23.843Z"
+  },
+  {
+    "id": "e86c28447b05",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/f9151ef1031b.xlsx",
+    "resultUrl": "/data/results/f9151ef1031b_analysis.json",
+    "llmReports": [
+      "f9151ef1031b_llm_01.md",
+      "f9151ef1031b_llm_02.md",
+      "f9151ef1031b_comprehensive.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 52384,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T08:52:22.518Z"
+  },
+  {
+    "id": "31178e5eb7f0",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/bcdfacfd7eae.xlsx",
+    "resultUrl": "/data/results/bcdfacfd7eae_analysis.json",
+    "llmReports": [
+      "bcdfacfd7eae_llm_01.md",
+      "bcdfacfd7eae_llm_02.md",
+      "bcdfacfd7eae_comprehensive.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 59951,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T08:44:23.694Z"
+  },
+  {
+    "id": "17cff8b9fc3e",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/ea9cb21484e7.xlsx",
+    "mode": "ai_insights",
+    "status": "failed",
+    "error": "Invalid state: Controller is already closed",
+    "duration_ms": 59812,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T08:43:28.243Z"
+  },
+  {
+    "id": "d655f04cfd24",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/5f3da5261798.xlsx",
+    "resultUrl": "/data/results/5f3da5261798_analysis.json",
+    "llmReports": [
+      "5f3da5261798_llm_01.md",
+      "5f3da5261798_comprehensive.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 47065,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T08:38:53.993Z"
+  },
+  {
+    "id": "09c40d309299",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/8882c59c955b.xlsx",
+    "resultUrl": "/data/results/8882c59c955b_analysis.json",
+    "llmReports": [
+      "8882c59c955b_llm_01.md",
+      "8882c59c955b_llm_02.md",
+      "8882c59c955b_comprehensive.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 53972,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T08:29:57.403Z"
+  },
+  {
+    "id": "e7bebfffc9c3",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/a7b3b33fc7f3.xlsx",
+    "resultUrl": "/data/results/a7b3b33fc7f3_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 18389,
+    "apiCalls": 3,
+    "timestamp": "2026-04-25T08:28:46.684Z"
+  },
+  {
+    "id": "1ee3a68c710b",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/ae6482e9c310.xlsx",
+    "resultUrl": "/data/results/ae6482e9c310_analysis.json",
+    "llmReports": [
+      "ae6482e9c310_llm_01.md",
+      "ae6482e9c310_comprehensive.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 44035,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T07:57:10.309Z"
+  },
+  {
+    "id": "77d8081ac874",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/98d0bcc3c0a6.xlsx",
+    "resultUrl": "/data/results/deep_research_report.md",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "98d0bcc3c0a6_llm_01.md",
+      "98d0bcc3c0a6_llm_02.md",
+      "98d0bcc3c0a6_llm_03.md",
+      "98d0bcc3c0a6_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "timestamp": "2026-04-25T07:29:39.063Z"
+  },
+  {
+    "id": "18252667ae83",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/f7ea64a61e0e.xlsx",
+    "resultUrl": "/data/results/deep_research_report.md",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "f7ea64a61e0e_llm_01.md",
+      "f7ea64a61e0e_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "timestamp": "2026-04-25T07:25:49.196Z"
+  },
+  {
+    "id": "a27d58c15978",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/656ed769dd44.xlsx",
+    "resultUrl": "/data/results/656ed769dd44_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "timestamp": "2026-04-25T07:24:03.084Z"
+  }
+]

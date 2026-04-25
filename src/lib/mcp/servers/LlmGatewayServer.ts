@@ -51,6 +51,25 @@ export class LlmGatewayServer extends McpServer {
             required: ["mode1ResultPath", "outputDir"],
           },
         },
+        {
+          name: "analyze_likert_scales",
+          description:
+            "对模式1的量表（Likert scale）分析结果运行 LLM 深度解读。输出 JSON 结构化数据（含题项解读、关注等级、建议）和 Markdown 可视化报告。使用 JSON Schema 约束，防止数据幻觉。",
+          inputSchema: {
+            type: "object",
+            properties: {
+              mode1ResultPath: {
+                type: "string",
+                description: "模式1 analyze_generic.py 输出的 JSON 文件路径（需包含 likert_scales 字段）",
+              },
+              outputDir: {
+                type: "string",
+                description: "报告输出目录（绝对路径）",
+              },
+            },
+            required: ["mode1ResultPath", "outputDir"],
+          },
+        },
       ],
     },
   };
@@ -64,6 +83,11 @@ export class LlmGatewayServer extends McpServer {
         return this._analyzeStructure(args.filePath as string);
       case "run_llm_analysis":
         return this._runLlmAnalysis(
+          args.mode1ResultPath as string,
+          args.outputDir as string
+        );
+      case "analyze_likert_scales":
+        return this._analyzeLikertScales(
           args.mode1ResultPath as string,
           args.outputDir as string
         );
@@ -175,6 +199,68 @@ export class LlmGatewayServer extends McpServer {
         {
           type: "text",
           text: `LLM analysis complete. Generated ${reports.length} report(s).`,
+        },
+      ],
+    };
+  }
+
+  /** 调用 likert_llm_analysis.py — 量表 LLM 深度解读 (JSON Schema 约束) */
+  private async _analyzeLikertScales(
+    mode1ResultPath: string,
+    outputDir: string
+  ): Promise<ToolCallResult> {
+    if (!mode1ResultPath || !outputDir) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Missing required parameters: mode1ResultPath and outputDir",
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    const result = await spawnPython(
+      resolveScript("analysis_engine/likert_llm_analysis.py"),
+      [mode1ResultPath, outputDir]
+    );
+
+    if (!result.success) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Likert analysis failed: ${result.error} — ${result.detail || ""}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    const reports = result.resultPaths.map((p) => ({
+      file: p.split("/").pop() || p,
+      path: p,
+    }));
+
+    // 尝试读取 JSON 报告内容
+    const jsonReport = reports.find((r) => r.file.endsWith("_likert_analysis.json"));
+    let jsonData: Record<string, unknown> | undefined;
+    if (jsonReport) {
+      try {
+        const content = await fs.readFile(jsonReport.path, "utf-8");
+        jsonData = JSON.parse(content) as Record<string, unknown>;
+      } catch {
+        // ignore parse error
+      }
+    }
+
+    return {
+      content: [
+        { type: "json", data: { likertReports: reports, ...(jsonData ? { likertAnalysis: jsonData } : {}) } },
+        {
+          type: "text",
+          text: `Likert scale analysis complete. Generated ${reports.length} report(s).`,
         },
       ],
     };

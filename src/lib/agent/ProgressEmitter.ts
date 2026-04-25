@@ -23,7 +23,7 @@ export class ProgressEmitter {
     this.emit({
       type: "progress",
       stage: skillName,
-      message: `[${skillName}] ${description}`,
+      message: description ? `[${skillName}] ${description}` : `[${skillName}]`,
     });
   }
 

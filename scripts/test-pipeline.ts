@@ -23,7 +23,8 @@ const RESULTS_DIR = path.join(process.cwd(), "data", "results");
 
 const MODE = (process.argv[2] || "quick_overview") as
   | "quick_overview"
-  | "ai_insights";
+  | "ai_insights"
+  | "deep_research";
 
 // ── 颜色输出 ──
 
@@ -254,6 +255,8 @@ async function verifyResults(
   // 检查5: 检查进度事件覆盖了所有 Phase 1 Skill
   const expectedSkills = MODE === "ai_insights"
     ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight", "LlmComprehensiveReport"]
+    : MODE === "deep_research"
+    ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight", "LlmComprehensiveReport", "DeepResearch"]
     : ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis"];
 
   const progressStages = new Set(
@@ -288,6 +291,18 @@ async function verifyResults(
         log("  ❌", `${r.file} 文件不存在`, c.red);
         pass = false;
       }
+    }
+  }
+
+  // 检查6b (Mode 3): 验证深度研究报告存在
+  if (MODE === "deep_research" && result?.deepResearchReport) {
+    const drPath = result.deepResearchReport as string;
+    if (fs.existsSync(drPath)) {
+      const drStats = fs.statSync(drPath);
+      log("✅", `深度研究报告: ${path.basename(drPath)} (${(drStats.size / 1024).toFixed(1)} KB)`, c.green);
+    } else {
+      log("❌", `深度研究报告不存在: ${drPath}`, c.red);
+      pass = false;
     }
   }
 

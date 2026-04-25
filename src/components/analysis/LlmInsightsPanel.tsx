@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sparkles, Loader2 } from "lucide-react";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 // Map of dataset ID to LLM report filename
 export const LLM_REPORTS: Record<string, { label: string; file: string }[]> = {
@@ -85,38 +86,9 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
           <span className="text-sm text-gray-500">加载中...</span>
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-xl p-6 prose prose-sm max-w-none">
+        <div className="bg-gray-50 rounded-xl p-6">
           <h4 className="text-sm font-semibold text-gray-900 mb-4">{currentLabel}</h4>
-          {/* Simple markdown rendering */}
-          <div className="text-sm text-gray-700 leading-relaxed space-y-3">
-            {content.split("\n").map((line, i) => {
-              const trimmed = line.trim();
-              if (!trimmed) return <div key={i} className="h-2" />;
-              if (trimmed.startsWith("### ")) {
-                return <h5 key={i} className="text-base font-bold text-gray-900 mt-4">{trimmed.replace("### ", "")}</h5>;
-              }
-              if (trimmed.startsWith("## ")) {
-                return <h4 key={i} className="text-lg font-bold text-gray-900 mt-5">{trimmed.replace("## ", "")}</h4>;
-              }
-              if (trimmed.startsWith("# ")) {
-                return <h3 key={i} className="text-xl font-bold text-gray-900">{trimmed.replace("# ", "")}</h3>;
-              }
-              if (trimmed.startsWith("- ")) {
-                return <li key={i} className="ml-4 text-gray-600">{trimmed.replace("- ", "").replace(/\*\*(.*?)\*\*/g, "$1")}</li>;
-              }
-              if (trimmed.startsWith("* ")) {
-                return <li key={i} className="ml-4 text-gray-600">{trimmed.replace("* ", "").replace(/\*\*(.*?)\*\*/g, "$1")}</li>;
-              }
-              if (trimmed === "---") return <hr key={i} className="my-3 border-gray-200" />;
-              // Clean bold markers
-              const cleaned = trimmed
-                .replace(/\*\*(.*?)\*\*/g, (_, t) => `<strong>${t}</strong>`)
-                .replace(/\*(.*?)\*/g, (_, t) => `<em>${t}</em>`);
-              return (
-                <p key={i} className="text-gray-600" dangerouslySetInnerHTML={{ __html: cleaned }} />
-              );
-            })}
-          </div>
+          <MarkdownRenderer content={content} />
         </div>
       )}
     </div>

@@ -36,15 +36,10 @@ export class PipelineExecutor {
       return [];
     }
 
-    this.emitter.log(
-      `Pipeline starting: ${skills.length} skill(s) for mode "${mode}"`
-    );
-
     // Step 1: 拓扑排序
     const sorted = this._topologicalSort(skills);
-
     this.emitter.log(
-      `DAG sorted: ${sorted.map((s) => s.name).join(" → ")}`
+      `${skills.length} skill(s) → ${sorted.map((s) => s.name).join(" → ")}`
     );
 
     // Step 2: 跟踪失败节点
@@ -71,7 +66,7 @@ export class PipelineExecutor {
       }
 
       // 执行 Skill
-      this.emitter.phaseStart(skill.name, skill.description);
+      this.emitter.phaseStart(skill.name, "");
 
       try {
         const output = await this._executeSkill(skill, input);
@@ -126,10 +121,7 @@ export class PipelineExecutor {
         input
       );
 
-      this.emitter.progress(
-        `调用 MCP: ${toolRef.server}/${toolRef.tool}`,
-        skill.name
-      );
+      // MCP 调用日志已简化，仅保留关键节点
 
       const result = await this.client.callTool(
         toolRef.server,
@@ -137,6 +129,12 @@ export class PipelineExecutor {
         resolvedParams,
         (msg) => this.emitter.progress(msg, skill.name)
       );
+
+      // 统计 API 调用次数
+      if (!result.isError) {
+        const current = (this.context.get("__apiCalls") as number) || 0;
+        this.context.set("__apiCalls", current + 1);
+      }
 
       if (result.isError) {
         const errText =
@@ -152,10 +150,11 @@ export class PipelineExecutor {
         }
         if (content.type === "text" && content.text) {
           collectedData._lastResultPath = content.text;
-          // 只在文本内容像文件路径时设置 resultPath
+          // resultPath 只接受 JSON 分析结果文件（模式1输出），
+          // 防止后续 Skill（如 DeepResearch 的 markdown 报告）覆盖它
           if (
             !collectedData.resultPath &&
-            content.text.match(/[\/\\].+\.\w+$/)
+            content.text.match(/[\/\\].+\.json$/)
           ) {
             collectedData.resultPath = content.text;
           }
@@ -209,39 +208,6 @@ export class PipelineExecutor {
           datasetLabel:
             (analysis?.dataset as string) ||
             (_input.datasetName || "未知问卷"),
-        },
-      };
-    }
-
-    // DeepResearch: 骨架实现
-    if (skill.name === "DeepResearch") {
-      const totalRecords = this.context.get("totalRecords") as number;
-      const totalFields = this.context.get("totalFields") as number;
-      const reports = this.context.get("reports") as
-        | Array<{ file: string }>
-        | undefined;
-
-      const hypotheses = [
-        "样本的代表性分析：基于人口学分布评估样本是否具有统计代表性",
-        "关键维度的交叉分析：识别不同群体（年级/专业/性别）间的显著差异",
-        "深层需求挖掘：从开放题中提炼受访者的核心诉求和未被满足的需求",
-        "趋势与关联：检测变量间的潜在关联模式",
-      ];
-
-      for (const h of hypotheses) {
-        this.emitter.progress(`[假设] ${h}`, skill.name);
-      }
-
-      return {
-        success: true,
-        data: {
-          hypothesesExplored: hypotheses.length,
-          hypotheses,
-          totalRecords,
-          totalFields,
-          reportCount: reports?.length || 0,
-          mode3Implemented: false,
-          note: "Mode 3 深度研究 Agent 当前为骨架实现。完整的多轮探索循环将在后续版本中实现。",
         },
       };
     }

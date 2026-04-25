@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle,
-  BarChart3, Sparkles, Terminal, ChevronDown,
+  BarChart3, Sparkles, Terminal, ChevronDown, Search,
 } from "lucide-react";
 
 type Status = "idle" | "uploading" | "uploaded" | "analyzing" | "done" | "error";
@@ -27,6 +27,8 @@ interface AnalysisResult {
     textFields: number;
   };
   llmReports?: { file: string; url: string }[];
+  likertReports?: { file: string; url: string }[];
+  deepResearchReport?: string;
 }
 
 interface ProgressEntry {
@@ -44,9 +46,10 @@ export default function UploadPage() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState("");
   const [errorDetail, setErrorDetail] = useState("");
-  const [mode, setMode] = useState<"quick_overview" | "ai_insights">("quick_overview");
+  const [mode, setMode] = useState<"quick_overview" | "ai_insights" | "deep_research">("quick_overview");
   const [progressLog, setProgressLog] = useState<ProgressEntry[]>([]);
   const [showLog, setShowLog] = useState(true);
+  const [roundProgress, setRoundProgress] = useState<{ current: number; total: number; title: string } | null>(null);
   const router = useRouter();
   const dropRef = useRef<HTMLDivElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -97,6 +100,7 @@ export default function UploadPage() {
     if (!filePath) return;
     setStatus("analyzing");
     setProgressLog([]);
+    setRoundProgress(null);
     setShowLog(true);
 
     try {
@@ -157,16 +161,27 @@ export default function UploadPage() {
 
   const handleSSEEvent = (event: Record<string, unknown>) => {
     switch (event.type) {
-      case "progress":
+      case "progress": {
+        const msg = event.message as string;
+        // 解析 Mode 3 的 Round X/5 进度
+        const roundMatch = msg.match(/Round\s+(\d)\/(\d)[\s:：]+(.+)/);
+        if (roundMatch && mode === "deep_research") {
+          setRoundProgress({
+            current: parseInt(roundMatch[1], 10),
+            total: parseInt(roundMatch[2], 10),
+            title: roundMatch[3].trim(),
+          });
+        }
         setProgressLog((prev) => [
           ...prev,
           {
-            text: event.message as string,
+            text: msg,
             stage: event.stage as string,
             timestamp: Date.now(),
           },
         ]);
         break;
+      }
 
       case "log":
         setProgressLog((prev) => [
@@ -185,6 +200,8 @@ export default function UploadPage() {
           mode: event.mode as string,
           summary: event.summary as AnalysisResult["summary"],
           llmReports: event.llmReports as AnalysisResult["llmReports"],
+          likertReports: event.likertReports as AnalysisResult["likertReports"],
+          deepResearchReport: event.deepResearchReport as string | undefined,
         });
         setStatus("done");
         break;
@@ -196,10 +213,14 @@ export default function UploadPage() {
         setErrorDetail(errDetail);
         // If there's a fallback result, still show it
         if (event.fallbackResult) {
+          const fb = event.fallbackResult as Record<string, unknown>;
           setResult({
-            resultUrl: (event.fallbackResult as Record<string, unknown>).resultUrl as string,
-            mode: (event.fallbackResult as Record<string, unknown>).mode as string,
+            resultUrl: fb.resultUrl as string,
+            mode: fb.mode as string,
             summary: {} as AnalysisResult["summary"],
+            llmReports: fb.llmReports as AnalysisResult["llmReports"],
+            likertReports: fb.likertReports as AnalysisResult["likertReports"],
+            deepResearchReport: fb.deepResearchReport as string | undefined,
           });
         }
         setStatus("error");
@@ -212,14 +233,25 @@ export default function UploadPage() {
   };
 
   const handleViewResults = () => {
-    if (result?.resultUrl) {
-      let navUrl = `/datasets/uploaded?url=${encodeURIComponent(result.resultUrl)}`;
-      if (result.llmReports && result.llmReports.length > 0) {
-        const reportNames = result.llmReports.map(r => encodeURIComponent(r.file)).join(",");
-        navUrl += `&reports=${reportNames}`;
-      }
-      router.push(navUrl);
+    if (!result) return;
+    let navUrl = "";
+    if (result.resultUrl) {
+      navUrl = `/datasets/uploaded?url=${encodeURIComponent(result.resultUrl)}`;
+    } else {
+      navUrl = `/datasets/uploaded`;
     }
+    if (result.llmReports && result.llmReports.length > 0) {
+      const reportNames = result.llmReports.map(r => encodeURIComponent(r.file)).join(",");
+      navUrl += `${navUrl.includes("?") ? "&" : "?"}reports=${reportNames}`;
+    }
+    if (result.deepResearchReport) {
+      navUrl += `${navUrl.includes("?") ? "&" : "?"}deepReport=${encodeURIComponent(result.deepResearchReport)}`;
+    }
+    if (result.likertReports && result.likertReports.length > 0) {
+      const likertNames = result.likertReports.map(r => encodeURIComponent(r.file)).join(",");
+      navUrl += `${navUrl.includes("?") ? "&" : "?"}likertReports=${likertNames}`;
+    }
+    router.push(navUrl);
   };
 
   const stageLabel = (stage: string) => {
@@ -361,7 +393,7 @@ export default function UploadPage() {
                     <BarChart3 className="w-4 h-4 text-blue-600" />
                     <span className="font-medium text-sm text-gray-900">模式1 · 快速概览</span>
                   </div>
-                  <p className="text-xs text-gray-500">10-30秒 · 描述性统计+NLP</p>
+                  <p className="text-xs text-gray-500">15-30秒 · 描述性统计+NLP</p>
                 </label>
 
                 <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
@@ -381,7 +413,27 @@ export default function UploadPage() {
                     <Sparkles className="w-4 h-4 text-purple-600" />
                     <span className="font-medium text-sm text-gray-900">模式2 · AI洞察</span>
                   </div>
-                  <p className="text-xs text-gray-500">3-5分钟 · 含LLM深度分析</p>
+                  <p className="text-xs text-gray-500">1-2分钟 · 含LLM深度分析</p>
+                </label>
+
+                <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  mode === "deep_research"
+                    ? "border-amber-500 bg-amber-50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}>
+                  <input
+                    type="radio"
+                    name="mode"
+                    value="deep_research"
+                    checked={mode === "deep_research"}
+                    onChange={() => setMode("deep_research")}
+                    className="sr-only"
+                  />
+                  <div className="flex items-center gap-2 mb-1">
+                    <Search className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-sm text-gray-900">模式3 · 深度研究</span>
+                  </div>
+                  <p className="text-xs text-gray-500">2-5分钟 · 五轮探索循环</p>
                 </label>
               </div>
 
@@ -415,6 +467,34 @@ export default function UploadPage() {
                 </button>
               </div>
 
+              {/* Mode 3 五轮进度指示器 */}
+              {mode === "deep_research" && roundProgress && (
+                <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-amber-400">
+                      第 {roundProgress.current}/{roundProgress.total} 轮
+                    </span>
+                    <span className="text-xs text-gray-400 truncate max-w-[200px]">
+                      {roundProgress.title}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {Array.from({ length: roundProgress.total }, (_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-full transition-all ${
+                          i < roundProgress.current
+                            ? "bg-amber-500"
+                            : i === roundProgress.current - 1
+                            ? "bg-amber-500 animate-pulse"
+                            : "bg-gray-600"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {showLog && (
                 <div className="p-3 space-y-1 max-h-80 overflow-y-auto font-mono text-xs">
                   {progressLog.length === 0 && (
@@ -444,10 +524,18 @@ export default function UploadPage() {
               <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 border-t border-gray-700">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
                 <span className="text-xs text-gray-400">
-                  {mode === "quick_overview" ? "模式1 · 统计分析中..." : "模式2 · LLM 深度分析中..."}
+                  {mode === "quick_overview"
+                    ? "模式1 · 统计分析中..."
+                    : mode === "ai_insights"
+                    ? "模式2 · LLM 深度分析中..."
+                    : "模式3 · 深度研究分析中..."}
                 </span>
                 <span className="text-xs text-gray-500 ml-auto">
-                  {mode === "quick_overview" ? "预计 10-30 秒" : "预计 3-5 分钟"}
+                  {mode === "quick_overview"
+                    ? "预计 15-30 秒"
+                    : mode === "ai_insights"
+                    ? "预计 1-2 分钟"
+                    : "预计 2-5 分钟"}
                 </span>
               </div>
             </div>
@@ -462,7 +550,11 @@ export default function UploadPage() {
             <CheckCircle className="w-5 h-5 text-green-600" />
             <div>
               <p className="font-medium text-green-800">
-                分析完成 ({result.mode === "ai_insights" ? "模式2 · AI洞察" : "模式1 · 快速概览"})
+                分析完成 ({result.mode === "deep_research"
+                  ? "模式3 · 深度研究"
+                  : result.mode === "ai_insights"
+                  ? "模式2 · AI洞察"
+                  : "模式1 · 快速概览"})
               </p>
               <p className="text-xs text-green-600">
                 {result.summary.records} 条记录 · {result.summary.fields} 个字段
@@ -475,6 +567,23 @@ export default function UploadPage() {
             <StatBadge label="量表题组" value={result.summary.likertGroups} color="purple" />
             <StatBadge label="文本分析" value={result.summary.textFields} color="green" />
           </div>
+
+          {/* Deep Research Report */}
+          {result.deepResearchReport && (
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+              <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                深度研究报告
+              </h4>
+              <a
+                href={result.deepResearchReport}
+                target="_blank"
+                className="block text-sm text-amber-600 hover:text-amber-800 underline"
+              >
+                查看完整深度研究报告
+              </a>
+            </div>
+          )}
 
           {/* LLM Report links */}
           {result.llmReports && result.llmReports.length > 0 && (

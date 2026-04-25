@@ -78,21 +78,26 @@ export class McpClient {
       params: { name: toolName, arguments: args },
     };
 
-    const response = await server.handleRequest(request);
+    server.setProgressCallback(onProgress);
+    try {
+      const response = await server.handleRequest(request);
 
-    if (response.error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Tool "${toolName}" error: ${response.error.message}`,
-          },
-        ],
-        isError: true,
-      };
+      if (response.error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Tool "${toolName}" error: ${response.error.message}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return response.result as ToolCallResult;
+    } finally {
+      server.setProgressCallback(undefined);
     }
-
-    return response.result as ToolCallResult;
   }
 }
 

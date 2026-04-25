@@ -15,6 +15,18 @@ export abstract class McpServer {
   /** 服务器清单 — 描述能力和提供的工具 */
   abstract readonly manifest: ServerManifest;
 
+  private _progressCb?: (msg: string) => void;
+
+  /** 设置进度回调（由 McpClient.callTool 注入） */
+  setProgressCallback(cb?: (msg: string) => void): void {
+    this._progressCb = cb;
+  }
+
+  /** 子类在执行工具时调用，将进度消息回传至 SSE */
+  protected reportProgress(msg: string): void {
+    this._progressCb?.(msg);
+  }
+
   // ── 核心协议路由 ──
 
   async handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {

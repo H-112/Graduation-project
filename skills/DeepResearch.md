@@ -8,7 +8,13 @@ description: >
 version: "0.1.0"
 applicableModes: [deep_research]
 dependencies: [DescriptiveAnalysis, LlmTextInsight, LlmComprehensiveReport]
-mcpTools: []
+mcpTools:
+  - server: deep-research-server
+    tool: run_deep_research
+    params:
+      inputJson: "$context.resultPath"
+      rawFile: "$input.filePath"
+      outputDir: "$input.outputDir"
 ---
 
 # 深度研究 Agent 技能（模式3 预留）

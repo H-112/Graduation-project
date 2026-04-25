@@ -1,51 +1,220 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { DATASETS } from "@/lib/data";
-import { Sparkles, BarChart3, ArrowRight } from "lucide-react";
+import { BarChart3, Sparkles, Search, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle, XCircle } from "lucide-react";
+
+interface HistoryRecord {
+  id: string;
+  type: "upload" | "analysis";
+  datasetName: string;
+  resultUrl?: string;
+  deepReportUrl?: string;
+  llmReports?: string[];
+  likertReports?: string[];
+  mode?: "quick_overview" | "ai_insights" | "deep_research";
+  status: "completed" | "failed" | "pending";
+  summary?: {
+    records?: number;
+    fields?: number;
+  };
+  error?: string;
+  duration_ms?: number;
+  apiCalls?: number;
+  timestamp: string;
+}
+
+const modeLabel = (mode?: string) => {
+  switch (mode) {
+    case "quick_overview": return "模式1 · 快速概览";
+    case "ai_insights": return "模式2 · AI洞察";
+    case "deep_research": return "模式3 · 深度研究";
+    default: return "分析";
+  }
+};
+
+const modeIcon = (mode?: string) => {
+  switch (mode) {
+    case "deep_research": return Search;
+    case "ai_insights": return Sparkles;
+    default: return BarChart3;
+  }
+};
+
+const modeColor = (mode?: string) => {
+  switch (mode) {
+    case "deep_research": return "text-amber-600 bg-amber-50 border-amber-200";
+    case "ai_insights": return "text-purple-600 bg-purple-50 border-purple-200";
+    default: return "text-blue-600 bg-blue-50 border-blue-200";
+  }
+};
+
+/** 格式化毫秒为可读时长 */
+const formatDuration = (ms?: number): string => {
+  if (ms === undefined || ms === null) return "";
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}秒`;
+  const mins = Math.floor(ms / 60_000);
+  const secs = Math.floor((ms % 60_000) / 1000);
+  return `${mins}分${secs > 0 ? `${secs}秒` : ""}`;
+};
 
 export default function AnalysisHistoryPage() {
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/history")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) throw new Error(data.error);
+        setHistory(data.history || []);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const analysisRecords = history.filter((r) => r.type === "analysis");
+
   return (
     <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900">分析历史</h2>
-        <p className="text-sm text-gray-500 mt-1">已完成的分析任务与报告</p>
+        <p className="text-sm text-gray-500 mt-1">
+          已完成的分析任务与报告 · {analysisRecords.length} 条记录
+        </p>
       </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-3" />
+          <span className="text-gray-500">加载历史记录...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
+          <AlertCircle className="w-5 h-5 text-red-500" />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+
+      {!loading && !error && analysisRecords.length === 0 && (
+        <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-200">
+          <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-500 font-medium">暂无分析记录</p>
+          <p className="text-sm text-gray-400 mt-1">
+            上传问卷并运行分析后，记录将出现在这里
+          </p>
+          <Link
+            href="/upload"
+            className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            去上传问卷
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      )}
 
       <div className="space-y-3">
-        {DATASETS.map((ds) => (
-          <div key={ds.id} className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">{ds.title}</h3>
-            <p className="text-sm text-gray-500 mb-4">样本量: {ds.records} 份 · 已完成模式1+模式2分析</p>
+        {analysisRecords.map((record) => {
+          const Icon = modeIcon(record.mode);
+          const colorClass = modeColor(record.mode);
+          const isCompleted = record.status === "completed";
+          const isFailed = record.status === "failed";
+          const timeStr = new Date(record.timestamp).toLocaleString("zh-CN", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
 
-            <div className="flex gap-3">
-              <Link
-                href={`/datasets/${ds.id}`}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <BarChart3 className="w-4 h-4" />
-                查看统计分析
-                <ArrowRight className="w-3 h-3" />
-              </Link>
+          return (
+            <div
+              key={record.id}
+              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-all"
+            >
+              <div className="flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 border ${colorClass}`}>
+                  <Icon className="w-5 h-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900 truncate">
+                      {record.datasetName}
+                    </h3>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isCompleted && (
+                        <span className="flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle className="w-3 h-3" />
+                          成功
+                        </span>
+                      )}
+                      {isFailed && (
+                        <span className="flex items-center gap-1 text-xs text-red-500">
+                          <XCircle className="w-3 h-3" />
+                          失败
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <Clock className="w-3 h-3" />
+                        {timeStr}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-sm text-gray-500 mt-1">
+                    {modeLabel(record.mode)}
+                    {record.summary?.records !== undefined && (
+                      <span> · {record.summary.records} 条记录</span>
+                    )}
+                    {record.summary?.fields !== undefined && (
+                      <span> · {record.summary.fields} 个字段</span>
+                    )}
+                    {record.duration_ms !== undefined && record.duration_ms > 0 && (
+                      <span> · 耗时 {formatDuration(record.duration_ms)}</span>
+                    )}
+                    {record.apiCalls !== undefined && record.apiCalls > 0 && (
+                      <span> · {record.apiCalls} 次 API 调用</span>
+                    )}
+                  </p>
+
+                  {isFailed && record.error && (
+                    <p className="text-xs text-red-500 mt-2 bg-red-50 rounded-lg px-3 py-2">
+                      {record.error}
+                    </p>
+                  )}
+
+                  {isCompleted && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {record.resultUrl && (
+                        <Link
+                          href={`/datasets/uploaded?url=${encodeURIComponent(record.resultUrl)}${record.llmReports?.length ? `&reports=${record.llmReports.map(f => encodeURIComponent(f)).join(",")}` : ""}${record.likertReports?.length ? `&likertReports=${record.likertReports.map(f => encodeURIComponent(f)).join(",")}` : ""}${record.deepReportUrl ? `&deepReport=${encodeURIComponent(record.deepReportUrl)}` : ""}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          <BarChart3 className="w-3 h-3" />
+                          查看结果
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      )}
+                      {record.deepReportUrl && (
+                        <a
+                          href={record.deepReportUrl}
+                          target="_blank"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                        >
+                          <Search className="w-3 h-3" />
+                          深度研究报告
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Cross-dataset comparison */}
-      <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-100 p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-5 h-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">跨数据集对比分析</h3>
-        </div>
-        <p className="text-sm text-gray-600 mb-4">
-          两份GenAI相关调查的对比分析，揭示共性与差异
-        </p>
-        <a
-          href="/llm-reports/cross_dataset_comparison.md"
-          target="_blank"
-          className="text-sm font-medium text-purple-600 hover:text-purple-700"
-        >
-          查看对比报告 →
-        </a>
+          );
+        })}
       </div>
     </div>
   );

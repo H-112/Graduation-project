@@ -24,7 +24,7 @@ export default function HomePage() {
           <ModeCard
             icon={BarChart3}
             title="模式1 · 快速概览"
-            time="10-30秒"
+            time="15-30秒"
             color="blue"
             features={["描述性统计", "频数分析", "关键词提取", "基础图表"]}
             note="纯本地计算，不调用LLM"
@@ -32,7 +32,7 @@ export default function HomePage() {
           <ModeCard
             icon={Sparkles}
             title="模式2 · AI 洞察"
-            time="3-5分钟"
+            time="1-2分钟"
             color="purple"
             features={["模式1所有能力", "LLM情感分析", "主题聚类", "AI洞察生成"]}
             note="引入 DeepSeek 大模型"
@@ -40,11 +40,10 @@ export default function HomePage() {
           <ModeCard
             icon={Brain}
             title="模式3 · 深度调研"
-            time="~30分钟"
-            color="gray"
-            features={["模式2所有能力", "自主Agent", "数据库深度查询", "完整研究报告"]}
-            note="即将上线"
-            disabled
+            time="2-5分钟"
+            color="amber"
+            features={["模式2所有能力", "五轮探索循环", "统计推断+关联挖掘", "完整研究报告"]}
+            note="自主Agent多轮假设验证"
           />
         </div>
       </div>
@@ -100,12 +99,12 @@ function ModeCard({
   const colors: Record<string, string> = {
     blue: "border-blue-200 bg-blue-50/50",
     purple: "border-purple-200 bg-purple-50/50",
-    gray: "border-gray-200 bg-gray-50/50",
+    amber: "border-amber-200 bg-amber-50/50",
   };
   const iconColors: Record<string, string> = {
     blue: "text-blue-600 bg-blue-100",
     purple: "text-purple-600 bg-purple-100",
-    gray: "text-gray-400 bg-gray-100",
+    amber: "text-amber-600 bg-amber-100",
   };
 
   return (
