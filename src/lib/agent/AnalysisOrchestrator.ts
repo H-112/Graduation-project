@@ -15,7 +15,8 @@ import { addAnalysisRecord } from "../history";
 import { FileServer } from "../mcp/servers/FileServer";
 import { StatsServer } from "../mcp/servers/StatsServer";
 import { LlmGatewayServer } from "../mcp/servers/LlmGatewayServer";
-import { NlpServer } from "../mcp/servers/NlpServer";
+// NlpServer 已迁移为 stdio 模式（官方 MCP SDK PoC），见下方 _registerMcpServers
+// import { NlpServer } from "../mcp/servers/NlpServer";
 import { DeepResearchServer } from "../mcp/servers/DeepResearchServer";
 import { SkillRegistry } from "./SkillRegistry";
 import { AnalysisContext } from "./AnalysisContext";
@@ -26,15 +27,17 @@ import type { SkillInput } from "./types";
 export class AnalysisOrchestrator {
   private registry: SkillRegistry;
   private initialized = false;
+  private serversRegistered = false;
 
   constructor() {
     this.registry = new SkillRegistry();
-    // 注册所有 MCP Server
-    this._registerMcpServers();
+    // MCP Server 注册延迟到 initialize()，以便支持异步 stdio 连接
   }
 
-  /** 初始化：加载 skills/*.md */
+  /** 初始化：注册 MCP Servers → 加载 skills/*.md */
   async initialize(skillsDir?: string): Promise<number> {
+    await this._registerMcpServers();
+
     const dir =
       skillsDir || path.join(process.cwd(), "skills");
     const count = await this.registry.loadAll(dir);
@@ -260,18 +263,27 @@ export class AnalysisOrchestrator {
 
   // ── MCP Server 注册 ──
 
-  private _registerMcpServers(): void {
+  private async _registerMcpServers(): Promise<void> {
+    if (this.serversRegistered) return;
+    this.serversRegistered = true;
+
+    // 进程内 Server（原有实现）
     mcpClient.register(new FileServer());
     mcpClient.register(new StatsServer());
     mcpClient.register(new LlmGatewayServer());
-    mcpClient.register(new NlpServer());
     mcpClient.register(new DeepResearchServer());
+
+    // stdio Server（官方 MCP SDK PoC：NlpServer）
+    await mcpClient.registerStdio({
+      name: "nlp-server",
+      command: "npx",
+      args: ["tsx", "servers/nlp-stdio-server.ts"],
+    });
+
+    const tools = await mcpClient.listAllTools();
     console.log(
       "[AnalysisOrchestrator] MCP Servers registered: " +
-        mcpClient
-          .listAllTools()
-          .map((t) => `${t.server}/${t.tool.name}`)
-          .join(", ")
+        tools.map((t) => `${t.server}/${t.tool.name}`).join(", ")
     );
   }
 }

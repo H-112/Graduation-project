@@ -1,8 +1,12 @@
 // ============================================
-// MCP Client — 进程内服务器注册中心 + 工具调用
-// 每个 MCP Server 注册后，通过 JSON-RPC 协议调用其工具
+// MCP Client — 进程内服务器注册中心 + stdio 服务器连接器
+// 支持两种模式：
+//   1. 进程内（in-process）：直接调用 McpServer 实例
+//   2. stdio：通过官方 SDK 启动独立进程并通信
 // ============================================
 
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { ToolManifest, ToolCallResult, JsonRpcRequest } from "./protocol";
 import { McpServer } from "./McpServer";
 
@@ -11,10 +15,19 @@ export interface ToolInfo {
   tool: ToolManifest;
 }
 
+export interface StdioServerConfig {
+  name: string;
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
 export class McpClient {
   private servers: Map<string, McpServer> = new Map();
+  private stdioClients: Map<string, Client> = new Map();
+  private stdioTransports: Map<string, StdioClientTransport> = new Map();
 
-  /** 注册一个 MCP Server */
+  /** 注册一个进程内 MCP Server */
   register(server: McpServer): void {
     const name = server.manifest.name;
     if (this.servers.has(name)) {
@@ -23,39 +36,131 @@ export class McpClient {
     this.servers.set(name, server);
   }
 
-  /** 移除一个 MCP Server */
+  /** 移除一个进程内 MCP Server */
   unregister(name: string): boolean {
     return this.servers.delete(name);
   }
 
-  /** 获取已注册的 Server */
+  /** 获取已注册的进程内 Server */
   getServer(name: string): McpServer | undefined {
     return this.servers.get(name);
   }
 
-  /** 列出所有已注册 Server 的全部工具 */
-  listAllTools(): ToolInfo[] {
+  /** 注册一个 stdio MCP Server（启动独立子进程） */
+  async registerStdio(config: StdioServerConfig): Promise<void> {
+    const { name, command, args = [], env } = config;
+
+    if (this.stdioClients.has(name)) {
+      console.warn(`[McpClient] stdio Server "${name}" already registered, closing previous...`);
+      await this._closeStdio(name);
+    }
+
+    const transport = new StdioClientTransport({
+      command,
+      args,
+      env,
+      stderr: "inherit",
+    });
+
+    const client = new Client(
+      { name: "app-client", version: "1.0.0" },
+      { capabilities: {} }
+    );
+
+    await client.connect(transport);
+    this.stdioClients.set(name, client);
+    this.stdioTransports.set(name, transport);
+
+    console.log(`[McpClient] stdio Server "${name}" connected (pid=${transport.pid ?? "?"})`);
+  }
+
+  /** 关闭指定 stdio Server */
+  async unregisterStdio(name: string): Promise<void> {
+    if (this.stdioClients.has(name)) {
+      await this._closeStdio(name);
+    }
+  }
+
+  private async _closeStdio(name: string): Promise<void> {
+    const client = this.stdioClients.get(name);
+    const transport = this.stdioTransports.get(name);
+    try {
+      await client?.close();
+    } catch {
+      // ignore
+    }
+    try {
+      await transport?.close();
+    } catch {
+      // ignore
+    }
+    this.stdioClients.delete(name);
+    this.stdioTransports.delete(name);
+  }
+
+  /** 列出所有已注册 Server 的全部工具（进程内 + stdio） */
+  async listAllTools(): Promise<ToolInfo[]> {
     const result: ToolInfo[] = [];
+
+    // 进程内 Server
     for (const server of this.servers.values()) {
       for (const tool of server.manifest.capabilities.tools) {
         result.push({ server: server.manifest.name, tool });
       }
     }
+
+    // stdio Server
+    for (const [name, client] of this.stdioClients) {
+      try {
+        const tools = await client.listTools();
+        for (const tool of tools.tools) {
+          result.push({
+            server: name,
+            tool: {
+              name: tool.name,
+              description: tool.description ?? "",
+              inputSchema: tool.inputSchema as ToolManifest["inputSchema"],
+            },
+          });
+        }
+      } catch (err) {
+        console.warn(`[McpClient] Failed to list tools from stdio server "${name}":`, err);
+      }
+    }
+
     return result;
   }
 
   /** 列出指定 Server 的工具 */
-  listServerTools(serverName: string): ToolManifest[] {
-    const server = this.servers.get(serverName);
-    return server?.manifest.capabilities.tools ?? [];
+  async listServerTools(serverName: string): Promise<ToolManifest[]> {
+    // 进程内
+    const local = this.servers.get(serverName);
+    if (local) {
+      return local.manifest.capabilities.tools;
+    }
+
+    // stdio
+    const client = this.stdioClients.get(serverName);
+    if (client) {
+      try {
+        const tools = await client.listTools();
+        return tools.tools.map((t) => ({
+          name: t.name,
+          description: t.description ?? "",
+          inputSchema: t.inputSchema as ToolManifest["inputSchema"],
+        }));
+      } catch (err) {
+        console.warn(`[McpClient] Failed to list tools from stdio server "${serverName}":`, err);
+        return [];
+      }
+    }
+
+    return [];
   }
 
   /**
    * 调用指定 Server 的指定工具
-   * @param serverName MCP Server 名称
-   * @param toolName 工具名称
-   * @param args 工具参数
-   * @param onProgress 可选进度回调（用于 SSE 实时推送）
+   * 自动根据 server 类型路由到进程内或 stdio
    */
   async callTool(
     serverName: string,
@@ -63,6 +168,53 @@ export class McpClient {
     args: Record<string, unknown>,
     onProgress?: (msg: string) => void
   ): Promise<ToolCallResult> {
+    // ── stdio 路由 ──
+    if (this.stdioClients.has(serverName)) {
+      const client = this.stdioClients.get(serverName)!;
+      try {
+        const result = await client.callTool({
+          name: toolName,
+          arguments: args,
+        });
+
+        // 官方 SDK 结果 → 自定义 ToolCallResult 格式转换
+        // callTool 返回类型含 [x: string]: unknown，需显式断言 content 结构
+        const rawContent = result.content as Array<{
+          type: string;
+          text?: string;
+          mimeType?: string;
+        }>;
+
+        const content: ToolCallResult["content"] = rawContent.map((item) => {
+          if (item.type === "text") {
+            return { type: "text", text: item.text ?? "" };
+          }
+          if (item.type === "image") {
+            return { type: "text", text: `[Image: ${item.mimeType ?? "?"}]` };
+          }
+          // 其他类型（resource 等）统一序列化
+          return { type: "text", text: JSON.stringify(item) };
+        });
+
+        return {
+          content,
+          isError: !!result.isError,
+        };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Tool "${toolName}" error via stdio: ${errMsg}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    // ── 进程内路由（原有逻辑）──
     const server = this.servers.get(serverName);
     if (!server) {
       return {
