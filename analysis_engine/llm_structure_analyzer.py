@@ -11,9 +11,7 @@ import os
 from pathlib import Path
 from collections import Counter
 from openai import OpenAI
-
-def progress(msg: str) -> None:
-    print(f"[PROGRESS] {msg}", flush=True)
+from utils import progress, validate_path, sanitize_prompt_text
 
 # ── 环境变量 ──────────────────────────────────
 def _load_env():
@@ -31,6 +29,20 @@ def _load_env():
 _load_env()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+def _track_usage(response):
+    """累加 API token 用量"""
+    global _token_usage
+    if hasattr(response, 'usage') and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_tokens"] += response.usage.total_tokens or 0
+
+def _print_tokens():
+    """打印 token 用量标记供 Node.js 解析"""
+    print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
 
 def get_client():
     if not DEEPSEEK_API_KEY:
@@ -114,13 +126,13 @@ def build_prompt(headers: list[str], col_data: dict) -> str:
         unique_count = len(set(non_empty))
         samples = sample_values(vals, 5)
 
-        lines.append(f"### 列{i}: {h}")
+        lines.append(f"### 列{i}: {sanitize_prompt_text(h)}")
         lines.append(f"唯一值数: {unique_count}")
         lines.append(f"总非空数: {len(non_empty)}")
         if samples:
             lines.append(f"采样值:")
             for s in samples:
-                lines.append(f"  - \"{s[:80]}\"")
+                lines.append(f"  - \"{sanitize_prompt_text(s[:80])}\"")
         lines.append("")
 
     lines.append("---")
@@ -142,11 +154,20 @@ def build_prompt(headers: list[str], col_data: dict) -> str:
 # ── 主流程 ───────────────────────────────────
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 llm_structure_analyzer.py <input_file>")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input_file")
+    parser.add_argument("--batch-size", type=int, default=0, help="每批列数，默认0=一次性全量")
+    parser.add_argument("--max-tokens", type=int, default=12000, help="每批最大 completion tokens")
+    args = parser.parse_args()
+
+    try:
+        infile = validate_path(args.input_file, must_exist=True)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-    infile = Path(sys.argv[1])
+    infile = Path(infile)
     progress(f"加载文件: {infile.name}")
     headers, rows = load_file(infile)
 
@@ -164,8 +185,8 @@ def main():
 
     progress(f"共 {len(headers)} 列，{len(active_columns)} 列有数据，发送给 LLM 分析...")
 
-    # 分批：每批最多 40 列，防止 token 超限
-    BATCH_SIZE = 40
+    # 分批：每批最多 batch_size 列，batch_size=0 表示一次性全量
+    BATCH_SIZE = args.batch_size if args.batch_size > 0 else len(active_columns)
     batches = [active_columns[i:i + BATCH_SIZE] for i in range(0, len(active_columns), BATCH_SIZE)]
 
     client = get_client()
@@ -188,8 +209,9 @@ def main():
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,  # 低温，提高一致性
-                max_tokens=4000,
+                max_tokens=args.max_tokens,
             )
+            _track_usage(response)
 
             content = response.choices[0].message.content
             # 提取 JSON 块
@@ -235,6 +257,7 @@ def main():
     }
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    _print_tokens()
 
 if __name__ == '__main__':
     main()

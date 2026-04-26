@@ -9,6 +9,7 @@ import re
 import math
 from collections import Counter
 from pathlib import Path
+from utils import tokenize_chinese, STOPWORDS
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_DIR = Path(__file__).parent / "output"
@@ -129,56 +130,6 @@ def describe_multi_select(records, col_prefix, col_names_map):
             for k, v in sorted(counts.items(), key=lambda x: -x[1])
         ]
     }
-
-def tokenize_chinese(text):
-    """简单的中文分词（基于jieba，如不可用则用字符级）"""
-    try:
-        import jieba
-        return list(jieba.cut(str(text)))
-    except ImportError:
-        # Fallback: 2-gram字符级分词
-        text = str(text)
-        result = []
-        i = 0
-        while i < len(text):
-            if '\u4e00' <= text[i] <= '\u9fff':
-                # 中文字符，取双字
-                if i + 1 < len(text) and '\u4e00' <= text[i+1] <= '\u9fff':
-                    result.append(text[i:i+2])
-                    i += 2
-                else:
-                    result.append(text[i])
-                    i += 1
-            elif text[i].isalpha():
-                j = i
-                while j < len(text) and text[j].isalpha():
-                    j += 1
-                result.append(text[i:j].lower())
-                i = j
-            else:
-                i += 1
-        return result
-
-STOPWORDS = set([
-    '的', '了', '在', '是', '我', '有', '和', '就', '不', '人', '都', '一',
-    '一个', '上', '也', '很', '到', '说', '要', '去', '你', '会', '着',
-    '没有', '看', '好', '自己', '这', '他', '她', '它', '们', '那', '些',
-    '这个', '那个', '可以', '觉得', '因为', '所以', '但是', '如果', '虽然',
-    '而且', '或者', '还是', '应该', '能够', '需要', '已经', '比较', '非常',
-    '什么', '怎么', '怎样', '吗', '呢', '吧', '啊', '哦', '嗯', '被',
-    '把', '让', '给', '用', '对', '从', '以', '之', '与', '及', '等',
-    '其', '所', '而', '且', '或', '但', '于', '为', '则', '更', '还',
-    '能', '会', '要', '想', '做', '来', '去', '过', '出', '到', '中',
-    '后', '前', '下', '时', '里', '现在', '今天', '今年', '学校',
-    '进行', '通过', '使用', '其中', '主要', '一般', '目前', '一些',
-    '可能', '情况', '方面', '问题', '方法', '方式', '内容', '过程',
-    '不同', '部分', '相关', '其他', '比较', '之后', '之前', '以上',
-    '之间', '最后', '第一', '第二', '第三', '利用', '认为', '提出',
-    '存在', '发展', '提供', '关注', '帮助', '了解', '研究', '表示',
-    '包括', '完成', '实现', '采用', '因此', '此外', '经过', '根据',
-    '对于', '关于', '以及', '然后', '首先', '其次', '接着', '比如',
-    '通常', '是否', '只是', '之间', '当中', '一点', '感觉', '很多',
-])
 
 def text_analysis(records, col_name):
     """开放题文本分析"""

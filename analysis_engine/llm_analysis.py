@@ -11,6 +11,7 @@ import os
 import sys
 from pathlib import Path
 from openai import OpenAI
+from utils import validate_path, sanitize_prompt_text
 
 OUTPUT_DIR = Path(__file__).parent / "output"
 
@@ -33,6 +34,20 @@ _load_env()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+def _track_usage(response):
+    """累加 API token 用量"""
+    global _token_usage
+    if hasattr(response, 'usage') and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_tokens"] += response.usage.total_tokens or 0
+
+def _print_tokens():
+    """打印 token 用量标记供 Node.js 解析"""
+    print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
+
 def get_client():
     """初始化 DeepSeek 客户端"""
     if not DEEPSEEK_API_KEY:
@@ -49,7 +64,7 @@ def load_mode1_result(dataset_id):
 
 def build_summary_prompt(data, dataset_id):
     """构建分析摘要Prompt"""
-    ds_label = data["dataset"]
+    ds_label = sanitize_prompt_text(data["dataset"])
     n = data["total_records"]
 
     prompt_parts = [f"# 问卷分析数据摘要\n\n**问卷名称**: {ds_label}\n**样本量**: {n}\n"]
@@ -61,8 +76,8 @@ def build_summary_prompt(data, dataset_id):
         for key, d in dem.items():
             if d and 'distribution' in d and d['distribution']:
                 items = d['distribution'][:5]
-                summary = ', '.join(f"{it['label']}({it['percentage']}%)" for it in items)
-                prompt_parts.append(f"- {d['column']}: {summary}\n")
+                summary = ', '.join(f"{sanitize_prompt_text(it['label'])}({it['percentage']}%)" for it in items)
+                prompt_parts.append(f"- {sanitize_prompt_text(d['column'])}: {summary}\n")
 
     # GenAI使用行为
     gai = data.get('genai_usage', {})
@@ -74,8 +89,8 @@ def build_summary_prompt(data, dataset_id):
             if key in gai and gai[key] and 'distribution' in gai[key]:
                 d = gai[key]
                 items = d['distribution'][:5]
-                summary = ', '.join(f"{it['label']}({it['percentage']}%)" for it in items)
-                prompt_parts.append(f"- {d['column']}: {summary}\n")
+                summary = ', '.join(f"{sanitize_prompt_text(it['label'])}({it['percentage']}%)" for it in items)
+                prompt_parts.append(f"- {sanitize_prompt_text(d['column'])}: {summary}\n")
 
     # Likert量表
     likert = data.get('likert_scales', {})
@@ -83,10 +98,10 @@ def build_summary_prompt(data, dataset_id):
         prompt_parts.append("\n## 核心量表得分 (1-5分)\n")
         for group_name, items in likert.items():
             if items:
-                prompt_parts.append(f"\n### {items[0]['group']}\n")
+                prompt_parts.append(f"\n### {sanitize_prompt_text(items[0]['group'])}\n")
                 for item in items:
                     label = item['column'].split('—')[-1] if '—' in item['column'] else item['column'][:40]
-                    prompt_parts.append(f"- {label.strip()}: 均值={item['mean']}, 标准差={item['std']}\n")
+                    prompt_parts.append(f"- {sanitize_prompt_text(label.strip())}: 均值={item['mean']}, 标准差={item['std']}\n")
 
     # 开放题关键词
     text = data.get('text_analysis', {})
@@ -95,8 +110,8 @@ def build_summary_prompt(data, dataset_id):
         for key, ta in text.items():
             if ta and 'top_keywords' in ta:
                 top15 = ta['top_keywords'][:15]
-                kw_str = ', '.join(f"{k['word']}({k['count']})" for k in top15)
-                prompt_parts.append(f"- **{ta.get('column', key)[:60]}**: {kw_str}\n")
+                kw_str = ', '.join(f"{sanitize_prompt_text(k['word'])}({k['count']})" for k in top15)
+                prompt_parts.append(f"- **{sanitize_prompt_text(ta.get('column', key)[:60])}**: {kw_str}\n")
 
     return ''.join(prompt_parts)
 
@@ -110,14 +125,15 @@ def analyze_sentiment_and_topics(client, data, dataset_id):
         if not ta or 'top_keywords' not in ta or not ta['top_keywords']:
             continue
 
-        print(f"\n  分析: {ta.get('column', key)[:60]}...")
+        col_name = sanitize_prompt_text(ta.get('column', key)[:60])
+        print(f"\n  分析: {col_name}...")
 
         top_kw = ta['top_keywords'][:30]
-        kw_str = ', '.join(f"{k['word']}" for k in top_kw)
+        kw_str = ', '.join(sanitize_prompt_text(k['word']) for k in top_kw)
 
         prompt = f"""你是一位社会科学研究的数据分析师。请基于以下问卷开放题的高频关键词，进行深入分析。
 
-**题目**: {ta.get('column', key)}
+**题目**: {col_name}
 **有效回答数**: {ta.get('total_answers', 0)}
 **高频关键词**: {kw_str}
 
@@ -139,6 +155,7 @@ def analyze_sentiment_and_topics(client, data, dataset_id):
                 temperature=0.7,
                 max_tokens=1500,
             )
+            _track_usage(response)
             result = response.choices[0].message.content
 
             # 保存结果
@@ -158,7 +175,7 @@ def generate_overall_insights(client, data, dataset_id):
     """生成综合洞察报告"""
     print("\n  生成综合洞察报告...")
 
-    ds_label = data["dataset"]
+    ds_label = sanitize_prompt_text(data["dataset"])
     summary = build_summary_prompt(data, dataset_id)
 
     prompt = f"""你是一位资深的数据科学和社会研究顾问。请基于以下问卷分析数据，撰写一份专业的综合洞察报告。
@@ -194,6 +211,7 @@ def generate_overall_insights(client, data, dataset_id):
             temperature=0.8,
             max_tokens=3000,
         )
+        _track_usage(response)
         report = response.choices[0].message.content
 
         output_path = OUTPUT_DIR / f"d{dataset_id}_comprehensive_report.md"
@@ -241,6 +259,7 @@ def compare_datasets(client, data5, data4):
             temperature=0.7,
             max_tokens=2500,
         )
+        _track_usage(response)
         comparison = response.choices[0].message.content
 
         output_path = OUTPUT_DIR / "cross_dataset_comparison.md"
@@ -258,6 +277,23 @@ def compare_datasets(client, data5, data4):
         return None
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description='模式2 LLM深度分析引擎')
+    ap.add_argument('--input', help='输入 Mode 1 分析结果 JSON 文件')
+    ap.add_argument('--output-dir', help='输出目录')
+    args = ap.parse_args()
+
+    try:
+        if args.input:
+            input_path = validate_path(args.input, must_exist=True)
+        if args.output_dir:
+            output_dir = validate_path(args.output_dir)
+            global OUTPUT_DIR
+            OUTPUT_DIR = output_dir
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     print("=" * 60)
     print("模式2: LLM 深度分析引擎 (DeepSeek)")
     print("=" * 60)
@@ -302,6 +338,7 @@ def main():
     print("模式2 LLM分析完成!")
     print(f"结果保存在: {OUTPUT_DIR}")
     print("=" * 60)
+    _print_tokens()
 
 if __name__ == '__main__':
     main()

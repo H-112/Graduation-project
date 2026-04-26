@@ -16,6 +16,7 @@ mcpTools:
       outputDir: "$input.outputDir"
       llmMap: "$context.llmMapFile"
       datasetName: "$input.datasetName"
+      crossAnalysis: "$input.crossAnalysis"
 ---
 
 # 描述性统计分析技能

@@ -19,6 +19,16 @@ export interface HistoryRecord {
   llmReports?: string[];
   /** 量表 LLM 分析报告文件名列表 */
   likertReports?: string[];
+  /** 理论映射报告 URL */
+  theoryMappingUrl?: string;
+  /** 可操作建议报告 URL */
+  actionableInsightsUrl?: string;
+  /** 研究缺口报告 URL */
+  researchGapsUrl?: string;
+  /** 因果推断提示报告 URL */
+  causalHintsUrl?: string;
+  /** 样本偏差诊断报告 URL */
+  sampleBiasUrl?: string;
   mode?: "quick_overview" | "ai_insights" | "deep_research";
   status: "completed" | "failed" | "pending";
   summary?: {
@@ -34,6 +44,12 @@ export interface HistoryRecord {
   duration_ms?: number;
   /** API 调用次数（MCP 工具调用） */
   apiCalls?: number;
+  /** LLM Token 用量统计 */
+  tokenUsage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
   timestamp: string;
 }
 
@@ -92,12 +108,18 @@ export async function addAnalysisRecord(params: {
   deepReportUrl?: string;
   llmReports?: string[];
   likertReports?: string[];
+  theoryMappingUrl?: string;
+  actionableInsightsUrl?: string;
+  researchGapsUrl?: string;
+  causalHintsUrl?: string;
+  sampleBiasUrl?: string;
   mode: "quick_overview" | "ai_insights" | "deep_research";
   status: "completed" | "failed";
   summary?: HistoryRecord["summary"];
   error?: string;
   duration_ms?: number;
   apiCalls?: number;
+  tokenUsage?: HistoryRecord["tokenUsage"];
 }): Promise<HistoryRecord> {
   const records = await readHistory();
 
@@ -115,12 +137,18 @@ export async function addAnalysisRecord(params: {
     deepReportUrl: params.deepReportUrl,
     llmReports: params.llmReports,
     likertReports: params.likertReports,
+    theoryMappingUrl: params.theoryMappingUrl,
+    actionableInsightsUrl: params.actionableInsightsUrl,
+    researchGapsUrl: params.researchGapsUrl,
+    causalHintsUrl: params.causalHintsUrl,
+    sampleBiasUrl: params.sampleBiasUrl,
     mode: params.mode,
     status: params.status,
     summary: params.summary,
     error: params.error,
     duration_ms: params.duration_ms,
     apiCalls: params.apiCalls,
+    tokenUsage: params.tokenUsage,
     timestamp: new Date().toISOString(),
   };
 
@@ -151,6 +179,14 @@ export async function getAllDatasets(): Promise<
     fields: number;
     source: string;
     resultUrl?: string;
+    deepReportUrl?: string;
+    llmReports?: string[];
+    likertReports?: string[];
+    theoryMappingUrl?: string;
+    actionableInsightsUrl?: string;
+    researchGapsUrl?: string;
+    causalHintsUrl?: string;
+    sampleBiasUrl?: string;
     timestamp: string;
   }>
 > {
@@ -166,6 +202,14 @@ export async function getAllDatasets(): Promise<
       fields: r.summary?.fields ?? 0,
       source: "用户上传",
       resultUrl: r.resultUrl,
+      deepReportUrl: r.deepReportUrl,
+      llmReports: r.llmReports,
+      likertReports: r.likertReports,
+      theoryMappingUrl: r.theoryMappingUrl,
+      actionableInsightsUrl: r.actionableInsightsUrl,
+      researchGapsUrl: r.researchGapsUrl,
+      causalHintsUrl: r.causalHintsUrl,
+      sampleBiasUrl: r.sampleBiasUrl,
       timestamp: r.timestamp,
     }));
 

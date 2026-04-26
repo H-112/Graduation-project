@@ -6,7 +6,7 @@ description: >
   为 Likert 量表提供文本→分值的动态映射。
   纠正纯规则引擎的语义盲区（如将高校名称误判为文本题）。
 version: "1.0.0"
-applicableModes: [quick_overview, ai_insights, deep_research]
+applicableModes: [ai_insights, deep_research]
 dependencies: [FileLoading]
 mcpTools:
   - server: llm-gateway-server

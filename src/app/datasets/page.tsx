@@ -13,6 +13,14 @@ interface DynamicDataset {
   fields: number;
   source: string;
   resultUrl?: string;
+  deepReportUrl?: string;
+  llmReports?: string[];
+  likertReports?: string[];
+  theoryMappingUrl?: string;
+  actionableInsightsUrl?: string;
+  researchGapsUrl?: string;
+  causalHintsUrl?: string;
+  sampleBiasUrl?: string;
   timestamp: string;
 }
 
@@ -38,8 +46,8 @@ export default function DatasetsPage() {
   return (
     <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">数据集</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">数据集</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           当前系统中已导入的问卷数据 · {DATASETS.length} 个预加载 + {dynamicDatasets.length} 个上传
         </p>
       </div>
@@ -47,31 +55,31 @@ export default function DatasetsPage() {
       {/* 用户上传的数据集 */}
       {dynamicDatasets.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
             <Clock className="w-4 h-4" />
             最近上传与分析
           </h3>
           {dynamicDatasets.map((ds) => (
             <Link
               key={ds.id}
-              href={ds.resultUrl ? `/datasets/uploaded?url=${encodeURIComponent(ds.resultUrl)}` : "#"}
-              className="block bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md hover:border-blue-200 transition-all"
+              href={ds.resultUrl ? `/datasets/uploaded?id=${ds.id}` : "#"}
+              className="block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all"
             >
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                  <Database className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
+                  <Database className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">{ds.title}</h3>
-                    <ArrowRight className="w-4 h-4 text-gray-300" />
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{ds.title}</h3>
+                    <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">{ds.description}</p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                    <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{ds.description}</p>
+                  <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 dark:text-gray-500">
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                       样本: {ds.records} 份
                     </span>
-                    <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                    <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                       字段: {ds.fields} 列
                     </span>
                     <span>{ds.source}</span>
@@ -85,7 +93,7 @@ export default function DatasetsPage() {
 
       {/* 预加载数据集 */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <Database className="w-4 h-4" />
           预加载数据集
         </h3>
@@ -93,23 +101,23 @@ export default function DatasetsPage() {
           <Link
             key={ds.id}
             href={`/datasets/${ds.id}`}
-            className="block bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md hover:border-blue-200 transition-all"
+            className="block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all"
           >
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
-                <Database className="w-5 h-5 text-blue-600" />
+              <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
+                <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">{ds.title}</h3>
-                  <ArrowRight className="w-4 h-4 text-gray-300" />
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">{ds.title}</h3>
+                  <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{ds.description}</p>
-                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                  <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{ds.description}</p>
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-400 dark:text-gray-500">
+                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                     样本: {ds.records} 份
                   </span>
-                  <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                  <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                     字段: {ds.fields} 列
                   </span>
                   <span>来源: {ds.source}</span>

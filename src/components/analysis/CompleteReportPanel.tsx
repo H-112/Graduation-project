@@ -44,7 +44,7 @@ export function CompleteReportPanel({
 
   const handleExport = () => {
     const md = generateMarkdownReport(data, llmContents);
-    const safeName = (data.dataset || "分析报告").replace(/[\\/:*?"<>|]/g, "_");
+    const safeName = (data.dataset || "分析报告").replace(/[\/:*?"<>|]/g, "_");
     downloadMarkdown(md, `${safeName}_完整报告.md`);
   };
 
@@ -60,7 +60,7 @@ export function CompleteReportPanel({
     <div className="space-y-8">
       {/* ── 导出按钮 ── */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">完整分析报告</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">完整分析报告</h2>
         <button
           onClick={handleExport}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
@@ -72,7 +72,7 @@ export function CompleteReportPanel({
 
       {/* ── 一、数据概览 ── */}
       <section>
-        <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
           一、数据概览
         </h3>
         <SummaryCards data={data} />
@@ -81,7 +81,7 @@ export function CompleteReportPanel({
       {/* ── 二、样本构成 ── */}
       {hasDemographics && (
         <section>
-          <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             二、样本构成（人口学分析）
           </h3>
           <DemographicsPanel demographics={data.demographics} />
@@ -91,7 +91,7 @@ export function CompleteReportPanel({
       {/* ── 三、选择题分布 ── */}
       {hasUsage && (
         <section>
-          <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             三、选择题分布
           </h3>
           <UsagePanel usage={data.genai_usage!} />
@@ -101,7 +101,7 @@ export function CompleteReportPanel({
       {/* ── 四、量表分析 ── */}
       {hasLikert && (
         <section>
-          <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             四、量表分析
           </h3>
           <LikertPanel likert={data.likert_scales} />
@@ -111,7 +111,7 @@ export function CompleteReportPanel({
       {/* ── 五、文本关键词 ── */}
       {hasText && (
         <section>
-          <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             五、开放题文本分析
           </h3>
           <KeywordsPanel textAnalysis={data.text_analysis} />
@@ -121,13 +121,13 @@ export function CompleteReportPanel({
       {/* ── 六、AI 深度洞察 ── */}
       {llmReports.length > 0 && (
         <section>
-          <h3 className="text-lg font-bold text-gray-800 mb-3 pb-2 border-b border-gray-100">
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             六、AI 深度洞察 (LLM)
           </h3>
           {llmLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-              <span className="text-sm text-gray-500">加载 LLM 报告...</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">加载 LLM 报告...</span>
             </div>
           ) : (
             <div className="space-y-6">
@@ -136,9 +136,9 @@ export function CompleteReportPanel({
                 return (
                   <div
                     key={report.file}
-                    className="bg-gray-50 rounded-xl p-6 prose prose-sm max-w-none"
+                    className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 prose prose-sm max-w-none"
                   >
-                    <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
                       {report.label}
                     </h4>
                     <MarkdownRenderer content={content} />
@@ -151,7 +151,7 @@ export function CompleteReportPanel({
       )}
 
       {/* ── 页脚 ── */}
-      <div className="text-center text-xs text-gray-400 py-4 border-t border-gray-100">
+      <div className="text-center text-xs text-gray-400 dark:text-gray-500 py-4 border-t border-gray-100 dark:border-gray-700">
         报告由智能体辅助问卷分析系统自动生成 · 数据截止{" "}
         {new Date().toLocaleDateString("zh-CN")}
       </div>

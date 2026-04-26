@@ -1,8 +1,8 @@
 // ============================================
 // PipelineExecutor — DAG 执行器
-// 核心算法: Kahn 拓扑排序 + 依赖失败优雅降级
-// 按拓扑顺序执行 Skill → 解析 params 模板 →
-// 调用 MCP 工具 → 输出写入 AnalysisContext
+// 核心算法: Kahn 拓扑排序 + 层级并行执行 + 依赖失败优雅降级
+// 按拓扑层级执行 Skill → 同层无依赖的 Skill 并行运行
+// 解析 params 模板 → 调用 MCP 工具 → 输出写入 AnalysisContext
 // ============================================
 
 import type { AnalysisMode } from "../types";
@@ -36,70 +36,123 @@ export class PipelineExecutor {
       return [];
     }
 
-    // Step 1: 拓扑排序
+    // Step 1: 拓扑排序（用于日志展示）
     const sorted = this._topologicalSort(skills);
     this.emitter.log(
       `${skills.length} skill(s) → ${sorted.map((s) => s.name).join(" → ")}`
     );
 
-    // Step 2: 跟踪失败节点
+    // Step 2: 按层级分组
+    const levels = this._topologicalSortLevels(skills);
+    this.emitter.log(
+      `执行层级: ${levels.map((lvl) => lvl.map((s) => s.name).join(",")).join(" | ")}`
+    );
+
+    // Step 3: 跟踪失败节点
     const failedSkills = new Set<string>();
     const results: SkillOutput[] = [];
 
-    // Step 3: 按序执行
-    for (const skill of sorted) {
-      // 检查是否有依赖失败
-      const blockedBy = skill.dependencies.filter((dep) =>
-        failedSkills.has(dep)
-      );
-      if (blockedBy.length > 0) {
-        this.emitter.phaseError(
-          skill.name,
-          `跳过（前置依赖失败: ${blockedBy.join(", ")}）`
+    // Step 4: 按层级执行（同层并行）
+    for (const level of levels) {
+      if (level.length === 1) {
+        // 单层串行（保持原有逻辑）
+        await this._executeSingleSkill(level[0], input, failedSkills, results);
+      } else {
+        // 多层并行
+        const levelResults = await Promise.all(
+          level.map((skill) =>
+            this._executeSingleSkill(skill, input, failedSkills, results)
+          )
         );
-        results.push({
-          success: false,
-          error: `Blocked by failed dependencies: ${blockedBy.join(", ")}`,
-        });
-        failedSkills.add(skill.name);
-        continue;
-      }
-
-      // 执行 Skill
-      this.emitter.phaseStart(skill.name, "");
-
-      try {
-        const output = await this._executeSkill(skill, input);
-        results.push(output);
-
-        if (output.success) {
-          if (output.data) {
-            this.context.merge(skill.name, output.data);
-          }
-          this.emitter.phaseComplete(skill.name);
-        } else {
-          const errMsg = output.error || "Unknown error";
-          this.emitter.phaseError(skill.name, errMsg);
-          failedSkills.add(skill.name);
-
-          // 对于 best-effort 技能（如 LlmStructureAnalysis），失败不阻断下游
-          const isBestEffort =
-            skill.name === "LlmStructureAnalysis";
-          if (!isBestEffort) {
-            // 非 best-effort 技能失败 → 标记后续依赖为跳过
-            this._markDependents(skill.name, skills, failedSkills);
-          }
-        }
-      } catch (err) {
-        const errMsg =
-          err instanceof Error ? err.message : String(err);
-        this.emitter.phaseError(skill.name, errMsg);
-        failedSkills.add(skill.name);
-        results.push({ success: false, error: errMsg });
+        // levelResults 已自动 push 到 results（_executeSingleSkill 内部处理）
+        // 这里仅用于类型校验，防止结果被意外丢弃
+        void levelResults;
       }
     }
 
     return results;
+  }
+
+  /**
+   * 执行单个 Skill（含依赖检查、错误处理、context 更新）
+   * @returns Skill 执行结果
+   */
+  private async _executeSingleSkill(
+    skill: SkillDefinition,
+    input: SkillInput,
+    failedSkills: Set<string>,
+    results: SkillOutput[]
+  ): Promise<SkillOutput> {
+    // 检查是否有依赖失败
+    const blockedBy = skill.dependencies.filter((dep) =>
+      failedSkills.has(dep)
+    );
+    if (blockedBy.length > 0) {
+      this.emitter.phaseError(
+        skill.name,
+        `跳过（前置依赖失败: ${blockedBy.join(", ")}）`
+      );
+      const output: SkillOutput = {
+        success: false,
+        error: `Blocked by failed dependencies: ${blockedBy.join(", ")}`,
+      };
+      results.push(output);
+      failedSkills.add(skill.name);
+      return output;
+    }
+
+    // 执行 Skill
+    this.emitter.phaseStart(skill.name, "");
+
+    try {
+      const output = await this._executeSkill(skill, input);
+      results.push(output);
+
+      if (output.success) {
+        if (output.data) {
+          this.context.merge(skill.name, output.data);
+        }
+        this.emitter.phaseComplete(skill.name);
+      } else {
+        const errMsg = output.error || "Unknown error";
+        this.emitter.phaseError(skill.name, errMsg);
+        failedSkills.add(skill.name);
+
+        // best-effort 技能失败时不阻断下游（不加入 failedSkills）
+        const isBestEffort = [
+          "LlmStructureAnalysis",
+          "LlmLikertAnalysis",
+          "LlmTextInsight",
+          "LlmComprehensiveReport",
+        ].includes(skill.name);
+        if (!isBestEffort) {
+          // 非 best-effort 技能失败 → 标记后续依赖为跳过
+          this._markDependents(skill.name, this.registry.getApplicableSkills(input.mode), failedSkills);
+        } else {
+          // best-effort: 从失败集合中移除，避免阻塞下游依赖
+          failedSkills.delete(skill.name);
+        }
+      }
+
+      return output;
+    } catch (err) {
+      const errMsg =
+        err instanceof Error ? err.message : String(err);
+      this.emitter.phaseError(skill.name, errMsg);
+      const isBestEffort = [
+        "LlmStructureAnalysis",
+        "LlmLikertAnalysis",
+        "LlmTextInsight",
+        "LlmComprehensiveReport",
+      ].includes(skill.name);
+      if (!isBestEffort) {
+        failedSkills.add(skill.name);
+        this._markDependents(skill.name, this.registry.getApplicableSkills(input.mode), failedSkills);
+      }
+      const output: SkillOutput = { success: false, error: errMsg };
+      results.push(output);
+      return output;
+    }
   }
 
   // ── Skill 执行：解析 mcpTools 并逐一调用 ──
@@ -130,10 +183,22 @@ export class PipelineExecutor {
         (msg) => this.emitter.progress(msg, skill.name)
       );
 
-      // 统计 API 调用次数
+      // 统计 API 调用次数 和 Token 用量
       if (!result.isError) {
         const current = (this.context.get("__apiCalls") as number) || 0;
         this.context.set("__apiCalls", current + 1);
+
+        if (result.tokenUsage) {
+          const acc = (this.context.get("__tokenUsage") as { prompt_tokens: number; completion_tokens: number; total_tokens: number }) || {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0,
+          };
+          acc.prompt_tokens += result.tokenUsage.prompt_tokens;
+          acc.completion_tokens += result.tokenUsage.completion_tokens;
+          acc.total_tokens += result.tokenUsage.total_tokens;
+          this.context.set("__tokenUsage", acc);
+        }
       }
 
       if (result.isError) {
@@ -318,6 +383,76 @@ export class PipelineExecutor {
     }
 
     return sorted;
+  }
+
+  /**
+   * 拓扑层级排序 — 将 Skill 按 DAG 深度分组
+   * 同层 Skill 之间无依赖，可并行执行
+   */
+  private _topologicalSortLevels(
+    skills: SkillDefinition[]
+  ): SkillDefinition[][] {
+    const inDegree = new Map<string, number>();
+    const adjacency = new Map<string, string[]>();
+    const skillMap = new Map<string, SkillDefinition>();
+
+    for (const s of skills) {
+      skillMap.set(s.name, s);
+      if (!inDegree.has(s.name)) {
+        inDegree.set(s.name, 0);
+      }
+      if (!adjacency.has(s.name)) {
+        adjacency.set(s.name, []);
+      }
+
+      for (const dep of s.dependencies) {
+        if (!inDegree.has(dep)) {
+          inDegree.set(dep, 0);
+        }
+        if (!adjacency.has(dep)) {
+          adjacency.set(dep, []);
+        }
+        adjacency.get(dep)!.push(s.name);
+        inDegree.set(s.name, (inDegree.get(s.name) || 0) + 1);
+      }
+    }
+
+    const levels: SkillDefinition[][] = [];
+    let currentLevel: string[] = [];
+
+    for (const [name, degree] of inDegree) {
+      if (degree === 0 && skillMap.has(name)) {
+        currentLevel.push(name);
+      }
+    }
+
+    while (currentLevel.length > 0) {
+      const levelSkills = currentLevel
+        .map((name) => skillMap.get(name)!)
+        .filter(Boolean);
+      levels.push(levelSkills);
+
+      const nextLevel: string[] = [];
+      for (const name of currentLevel) {
+        for (const neighbor of adjacency.get(name) || []) {
+          const newDegree = (inDegree.get(neighbor) || 1) - 1;
+          inDegree.set(neighbor, newDegree);
+          if (newDegree === 0 && skillMap.has(neighbor)) {
+            nextLevel.push(neighbor);
+          }
+        }
+      }
+      currentLevel = nextLevel;
+    }
+
+    // 将未排序的 Skill 追加到最后一个层级（兜底）
+    const seen = new Set(levels.flat().map((s) => s.name));
+    const remaining = skills.filter((s) => !seen.has(s.name));
+    if (remaining.length > 0) {
+      levels.push(remaining);
+    }
+
+    return levels;
   }
 
   /** 将失败 Skill 的所有传递依赖标记为失败 */

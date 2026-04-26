@@ -6,7 +6,7 @@ description: >
   为前端展示准备结构化的报告数据。
 version: "1.0.0"
 applicableModes: [ai_insights, deep_research]
-dependencies: [DescriptiveAnalysis, LlmTextInsight]
+dependencies: [DescriptiveAnalysis, LlmTextInsight, LlmLikertAnalysis]
 mcpTools: []
 ---
 

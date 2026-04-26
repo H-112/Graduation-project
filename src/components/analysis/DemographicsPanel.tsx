@@ -7,11 +7,11 @@ export function DemographicsPanel({ demographics }: { demographics: Record<strin
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-bold text-gray-900">样本构成</h3>
+      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">样本构成</h3>
       <div className="grid grid-cols-2 gap-6">
         {entries.map(([key, d]) => (
-          <div key={key} className="bg-gray-50 rounded-xl p-4">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">{d.column}</h4>
+          <div key={key} className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{d.column}</h4>
             <div className="space-y-2">
               {d.distribution.slice(0, 8).map((item, i) => {
                   const pct = item.percentage ?? 0;
@@ -19,10 +19,10 @@ export function DemographicsPanel({ demographics }: { demographics: Record<strin
                     <div key={i} className="flex items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between text-xs mb-0.5">
-                          <span className="text-gray-600 truncate">{item.label}</span>
-                          <span className="text-gray-400 ml-2 shrink-0">{item.count} ({pct}%)</span>
+                          <span className="text-gray-600 dark:text-gray-400 truncate">{item.label}</span>
+                          <span className="text-gray-400 dark:text-gray-500 ml-2 shrink-0">{item.count} ({pct}%)</span>
                         </div>
-                        <div className="h-1.5 bg-white rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-500 rounded-full transition-all"
                             style={{ width: `${Math.max(pct, 2)}%` }}

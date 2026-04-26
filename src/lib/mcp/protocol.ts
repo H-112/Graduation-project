@@ -70,6 +70,13 @@ export interface ToolCallRequest {
   arguments: Record<string, unknown>;
 }
 
+/** Token 用量统计 */
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+}
+
 /** 工具调用结果 — MCP content[] 格式 */
 export interface ToolCallResult {
   content: Array<{
@@ -79,6 +86,7 @@ export interface ToolCallResult {
     path?: string;
   }>;
   isError?: boolean;
+  tokenUsage?: TokenUsage;
 }
 
 // ── MCP 传输层抽象 ──

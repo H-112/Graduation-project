@@ -8,10 +8,7 @@ import os
 import sys
 from pathlib import Path
 from openai import OpenAI
-
-def progress(msg):
-    """输出进度标记，前端通过 SSE 实时接收"""
-    print(f"[PROGRESS] {msg}", flush=True)
+from utils import progress, validate_path, sanitize_prompt_text
 
 # ── 环境变量加载 ──────────────────────────────────
 def _load_env():
@@ -31,6 +28,20 @@ _load_env()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
 
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+def _track_usage(response):
+    """累加 API token 用量"""
+    global _token_usage
+    if hasattr(response, 'usage') and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_tokens"] += response.usage.total_tokens or 0
+
+def _print_tokens():
+    """打印 token 用量标记供 Node.js 解析"""
+    print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
+
 def get_client():
     if not DEEPSEEK_API_KEY:
         progress("错误: 未设置 DEEPSEEK_API_KEY")
@@ -47,7 +58,7 @@ def build_data_summary(data):
         return it.get('percentage', it.get('percentage_in_respondents', it.get('percentage_in_total', 0)))
 
     parts = []
-    ds_label = data.get("dataset", "未知问卷")
+    ds_label = sanitize_prompt_text(data.get("dataset", "未知问卷"))
     n = data.get("total_records", 0)
     parts.append(f"# 问卷分析数据\n\n**问卷**: {ds_label}\n**样本量**: {n}\n")
 
@@ -58,8 +69,8 @@ def build_data_summary(data):
         for key, d in dem.items():
             if d and d.get('distribution'):
                 items = d['distribution'][:5]
-                summary = ', '.join(f"{it['label']}({_pct(it)}%)" for it in items)
-                parts.append(f"- {d['column']}: {summary}\n")
+                summary = ', '.join(f"{sanitize_prompt_text(it['label'])}({_pct(it)}%)" for it in items)
+                parts.append(f"- {sanitize_prompt_text(d['column'])}: {summary}\n")
 
     # 单选题分布
     usage = data.get('genai_usage', {})
@@ -68,8 +79,8 @@ def build_data_summary(data):
         for key, d in list(usage.items())[:15]:
             if d and d.get('distribution'):
                 items = d['distribution'][:5]
-                summary = ', '.join(f"{it['label']}({_pct(it)}%)" for it in items)
-                parts.append(f"- {d['column']}: {summary}\n")
+                summary = ', '.join(f"{sanitize_prompt_text(it['label'])}({_pct(it)}%)" for it in items)
+                parts.append(f"- {sanitize_prompt_text(d['column'])}: {summary}\n")
 
     # Likert 量表
     likert = data.get('likert_scales', {})
@@ -77,9 +88,9 @@ def build_data_summary(data):
         parts.append("\n## 量表得分 (1-5分)\n")
         for group_name, items in likert.items():
             if items:
-                parts.append(f"\n### {group_name}\n")
+                parts.append(f"\n### {sanitize_prompt_text(group_name)}\n")
                 for item in items:
-                    label = item['column'][:60]
+                    label = sanitize_prompt_text(item['column'][:60])
                     parts.append(f"- {label}: 均值={item['mean']}, 标准差={item['std']}\n")
 
     # 文本关键词
@@ -89,8 +100,8 @@ def build_data_summary(data):
         for key, ta in text.items():
             if ta and ta.get('top_keywords'):
                 top15 = ta['top_keywords'][:15]
-                kw_str = ', '.join(f"{k['word']}({k['count']})" for k in top15)
-                parts.append(f"- **{ta.get('column', key)[:60]}**: {kw_str}\n")
+                kw_str = ', '.join(f"{sanitize_prompt_text(k['word'])}({k['count']})" for k in top15)
+                parts.append(f"- **{sanitize_prompt_text(ta.get('column', key)[:60])}**: {kw_str}\n")
 
     return ''.join(parts)
 
@@ -99,11 +110,11 @@ def build_data_summary(data):
 
 def analyze_text_question(client, ta, index, total):
     """用 LLM 分析一个开放题"""
-    label = ta.get('column', f'题目{index}')[:80]
+    label = sanitize_prompt_text(ta.get('column', f'题目{index}')[:80])
     progress(f"文本分析 ({index}/{total}): {label}...")
 
     top_kw = ta.get('top_keywords', [])[:30]
-    kw_str = ', '.join(f"{k['word']}" for k in top_kw)
+    kw_str = ', '.join(sanitize_prompt_text(k['word']) for k in top_kw)
     n_answers = ta.get('total_answers', 0)
 
     prompt = f"""你是社会科学数据分析师。请基于以下问卷开放题的高频关键词进行深入分析。
@@ -130,6 +141,7 @@ def analyze_text_question(client, ta, index, total):
             temperature=0.7,
             max_tokens=1500,
         )
+        _track_usage(response)
         return response.choices[0].message.content
     except Exception as e:
         progress(f"  ✗ LLM 调用失败: {e}")
@@ -145,39 +157,40 @@ def generate_comprehensive_report(client, data):
     ds_label = data.get("dataset", "未知问卷")
     summary = build_data_summary(data)
 
-    prompt = f"""你是资深数据科学和社会研究顾问。请基于以下问卷分析数据，撰写一份专业的综合洞察报告。
+    prompt = f"""基于以下问卷分析数据，直接输出洞察内容，不要写开场白、自我介绍或"作为...顾问"等套话。
 
 {summary}
 
-请按以下结构撰写报告（1000字以内）：
+按以下结构输出（800字以内，直奔主题）：
 
-## 一、核心发现
-列出3-5个最重要的数据发现，每个发现用数据支撑。
+## 核心发现
+3-5个最重要的数据发现，每个用数据支撑。
 
-## 二、样本特征画像
-描述受访者群体的特征和行为模式。
+## 样本特征
+受访者群体的特征和行为模式。
 
-## 三、关键维度分析
-基于量表数据和选择题分布，分析核心维度的得分情况和意义。
+## 关键维度
+量表和选择题的核心维度得分分析。
 
-## 四、开放题洞察
-综合开放题的高频关键词，提炼受访者的核心诉求和关注点。
+## 开放题洞察
+受访者的核心诉求和关注点。
 
-## 五、建议与启示
-基于分析结果，提出3-5条具体建议。
+## 建议
+3-5条具体建议。
 
-请用专业、客观的语言。"""
+语言简洁、客观，不写废话。"""
 
     try:
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是资深数据科学顾问，擅长从数据中提炼洞察并撰写专业分析报告。"},
+                {"role": "system", "content": "你是一位数据科学顾问，擅长提炼数据洞察。输出必须简洁直接，禁止写开场白、自我介绍和套话。"},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.8,
             max_tokens=3000,
         )
+        _track_usage(response)
         return response.choices[0].message.content
     except Exception as e:
         progress(f"  ✗ 综合报告生成失败: {e}")
@@ -191,8 +204,15 @@ def main():
         print("Usage: python3 generic_llm_analysis.py <mode1_result_json> [output_dir]")
         sys.exit(1)
 
-    result_path = Path(sys.argv[1])
-    out_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else result_path.parent
+    try:
+        result_path = validate_path(sys.argv[1], must_exist=True)
+        out_dir = validate_path(sys.argv[2]) if len(sys.argv) > 2 else result_path.parent
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    result_path = Path(result_path)
+    out_dir = Path(out_dir) if not isinstance(out_dir, Path) else out_dir
 
     progress(f"加载分析数据: {result_path.name}...")
     data = json.loads(result_path.read_text('utf-8'))
@@ -225,7 +245,7 @@ def main():
             report_path = out_dir / f"{safe_name}.md"
 
             with open(report_path, 'w', encoding='utf-8') as f:
-                f.write(f"# LLM 深度分析\n\n**题目**: {ta.get('column', key)}\n\n{analysis}")
+                f.write(f"**题目**: {ta.get('column', key)}\n\n{analysis}")
 
             progress(f"  ✓ 已保存: {report_path.name}")
             reports.append({
@@ -242,7 +262,6 @@ def main():
     if comprehensive:
         comp_path = out_dir / f"{base_name}_comprehensive.md"
         with open(comp_path, 'w', encoding='utf-8') as f:
-            f.write(f"# {data.get('dataset', '问卷分析')} — 综合洞察报告\n\n")
             f.write(f"*基于 DeepSeek LLM 分析 | 样本量: {data.get('total_records', 0)}*\n\n")
             f.write(comprehensive)
 
@@ -266,6 +285,7 @@ def main():
         dst = public_dir / src.name
         dst.write_text(src.read_text('utf-8'))
     progress(f"报告已同步到 public/llm-reports/")
+    _print_tokens()
 
 if __name__ == '__main__':
     main()

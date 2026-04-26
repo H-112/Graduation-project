@@ -12,12 +12,14 @@ import crypto from "crypto";
 import type { AnalysisMode } from "../types";
 import { mcpClient } from "../mcp/McpClient";
 import { addAnalysisRecord } from "../history";
+import type { HistoryRecord } from "../history";
 import { FileServer } from "../mcp/servers/FileServer";
 import { StatsServer } from "../mcp/servers/StatsServer";
 import { LlmGatewayServer } from "../mcp/servers/LlmGatewayServer";
 // NlpServer 已迁移为 stdio 模式（官方 MCP SDK PoC），见下方 _registerMcpServers
 // import { NlpServer } from "../mcp/servers/NlpServer";
 import { DeepResearchServer } from "../mcp/servers/DeepResearchServer";
+import { InsightServer } from "../mcp/servers/InsightServer";
 import { SkillRegistry } from "./SkillRegistry";
 import { AnalysisContext } from "./AnalysisContext";
 import { ProgressEmitter } from "./ProgressEmitter";
@@ -85,6 +87,7 @@ export class AnalysisOrchestrator {
           outputDir: outDir,
           datasetName: datasetName || path.basename(filePath),
           mode,
+          crossAnalysis: mode !== "quick_overview", // 模式2/3 启用交叉分析
           context: {},
         };
 
@@ -112,6 +115,7 @@ export class AnalysisOrchestrator {
           if (!descResult && mode !== "deep_research") {
             const duration_ms = Date.now() - startTime;
             const apiCalls = (context.get("__apiCalls") as number) || 0;
+            const tokenUsage = context.get("__tokenUsage") as HistoryRecord["tokenUsage"] | undefined;
             await addAnalysisRecord({
               id: analysisId,
               datasetName: datasetName || path.basename(filePath),
@@ -121,6 +125,7 @@ export class AnalysisOrchestrator {
               error: "核心统计分析未成功完成",
               duration_ms,
               apiCalls,
+              tokenUsage,
             });
             emitter.error("分析失败", "核心统计分析未成功完成");
             emitter.done();
@@ -185,9 +190,31 @@ export class AnalysisOrchestrator {
             }
           }
 
+          // Mode 3 扩展洞察报告
+          async function copyInsightFile(contextKey: string, prefix: string): Promise<string> {
+            const filePath = context.get(contextKey) as string | undefined;
+            if (!filePath) return "";
+            try {
+              const reportPublicDir = path.join(process.cwd(), "public", "data", "results");
+              await fs.mkdir(reportPublicDir, { recursive: true });
+              const destName = `${prefix}_${path.basename(filePath)}`;
+              await fs.copyFile(filePath, path.join(reportPublicDir, destName));
+              return `/data/results/${destName}`;
+            } catch {
+              return "";
+            }
+          }
+
+          const theoryMappingUrl = await copyInsightFile("theoryMapping", "theory");
+          const actionableInsightsUrl = await copyInsightFile("actionableInsights", "actionable");
+          const researchGapsUrl = await copyInsightFile("researchGaps", "gap");
+          const causalHintsUrl = await copyInsightFile("causalHints", "causal");
+          const sampleBiasUrl = await copyInsightFile("sampleBias", "bias");
+
           // 记录分析历史
           const duration_ms = Date.now() - startTime;
           const apiCalls = (context.get("__apiCalls") as number) || 0;
+          const tokenUsage = context.get("__tokenUsage") as HistoryRecord["tokenUsage"] | undefined;
           await addAnalysisRecord({
             id: analysisId,
             datasetName: datasetName || path.basename(filePath),
@@ -196,10 +223,16 @@ export class AnalysisOrchestrator {
             deepReportUrl: deepResearchReportUrl || undefined,
             llmReports: llmReports?.map((r) => r.file),
             likertReports: likertReportsRaw?.map((r) => r.file),
+            theoryMappingUrl: theoryMappingUrl || undefined,
+            actionableInsightsUrl: actionableInsightsUrl || undefined,
+            researchGapsUrl: researchGapsUrl || undefined,
+            causalHintsUrl: causalHintsUrl || undefined,
+            sampleBiasUrl: sampleBiasUrl || undefined,
             mode,
             status: "completed",
             duration_ms,
             apiCalls,
+            tokenUsage,
             summary: {
               records: total_records,
               fields: total_fields,
@@ -211,6 +244,7 @@ export class AnalysisOrchestrator {
           });
 
           emitter.result({
+            id: analysisId,
             mode,
             resultPath: resultPath || "",
             resultUrl,
@@ -226,6 +260,12 @@ export class AnalysisOrchestrator {
             ...(llmReports ? { llmReports } : {}),
             ...(likertReports ? { likertReports } : {}),
             ...(deepResearchReportUrl ? { deepResearchReport: deepResearchReportUrl } : {}),
+            ...(theoryMappingUrl ? { theoryMapping: theoryMappingUrl } : {}),
+            ...(actionableInsightsUrl ? { actionableInsights: actionableInsightsUrl } : {}),
+            ...(researchGapsUrl ? { researchGaps: researchGapsUrl } : {}),
+            ...(causalHintsUrl ? { causalHints: causalHintsUrl } : {}),
+            ...(sampleBiasUrl ? { sampleBias: sampleBiasUrl } : {}),
+            ...(tokenUsage ? { tokenUsage } : {}),
           });
 
           emitter.done();
@@ -234,6 +274,7 @@ export class AnalysisOrchestrator {
           const errorMsg = err instanceof Error ? err.message : String(err);
           const duration_ms = Date.now() - startTime;
           const apiCalls = (context.get("__apiCalls") as number) || 0;
+          const tokenUsage = context.get("__tokenUsage") as HistoryRecord["tokenUsage"] | undefined;
           await addAnalysisRecord({
             id: analysisId,
             datasetName: datasetName || path.basename(filePath),
@@ -243,6 +284,7 @@ export class AnalysisOrchestrator {
             error: errorMsg,
             duration_ms,
             apiCalls,
+            tokenUsage,
           });
           emitter.error("分析引擎异常", errorMsg);
           emitter.done();
@@ -272,6 +314,7 @@ export class AnalysisOrchestrator {
     mcpClient.register(new StatsServer());
     mcpClient.register(new LlmGatewayServer());
     mcpClient.register(new DeepResearchServer());
+    mcpClient.register(new InsightServer());
 
     // stdio Server（官方 MCP SDK PoC：NlpServer）
     await mcpClient.registerStdio({

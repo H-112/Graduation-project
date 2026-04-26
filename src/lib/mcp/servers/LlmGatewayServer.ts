@@ -120,25 +120,27 @@ export class LlmGatewayServer extends McpServer {
         content: [
           {
             type: "text",
-            text: `LLM structure analysis failed: ${result.error} — ${result.detail || ""}`,
+            text: `LLM structure analysis failed: ${result.error}${result.detail ? ` — ${result.detail}` : ""}`,
           },
         ],
         isError: true,
       };
     }
 
-    // 输出格式: [PROGRESS] 行 ... + 最终 JSON。提取最后一个完整 JSON 对象。
+    // 输出格式: [PROGRESS] 行 ... + 多行 JSON + [TOKENS] 行。
+    // 过滤掉所有标记行后，将剩余内容拼接为完整 JSON 进行解析。
     try {
-      const jsonStart = result.stdout.lastIndexOf("\n{");
-      const jsonEnd = result.stdout.lastIndexOf("}");
-      if (jsonStart >= 0 && jsonEnd > jsonStart) {
-        const jsonStr = result.stdout.slice(jsonStart + 1, jsonEnd + 1);
-        const data = JSON.parse(jsonStr);
-        return { content: [{ type: "json", data }] };
+      const markerPrefixes = ["[PROGRESS]", "[TOKENS]", "[RESULT]", "[DONE]"];
+      const cleanJson = result.stdout
+        .split("\n")
+        .filter((line) => !markerPrefixes.some((p) => line.trim().startsWith(p)))
+        .join("\n")
+        .trim();
+      if (cleanJson) {
+        const data = JSON.parse(cleanJson);
+        return { content: [{ type: "json", data }], tokenUsage: result.tokenUsage };
       }
-      // 尝试将整个 stdout 作为 JSON 解析
-      const data = JSON.parse(result.stdout);
-      return { content: [{ type: "json", data }] };
+      throw new Error("Empty output after filtering markers");
     } catch {
       return {
         content: [
@@ -179,7 +181,7 @@ export class LlmGatewayServer extends McpServer {
         content: [
           {
             type: "text",
-            text: `LLM analysis failed: ${result.error} — ${result.detail || ""}`,
+            text: `LLM analysis failed: ${result.error}${result.detail ? ` — ${result.detail}` : ""}`,
           },
         ],
         isError: true,
@@ -201,6 +203,7 @@ export class LlmGatewayServer extends McpServer {
           text: `LLM analysis complete. Generated ${reports.length} report(s).`,
         },
       ],
+      tokenUsage: result.tokenUsage,
     };
   }
 
@@ -231,7 +234,7 @@ export class LlmGatewayServer extends McpServer {
         content: [
           {
             type: "text",
-            text: `Likert analysis failed: ${result.error} — ${result.detail || ""}`,
+            text: `Likert analysis failed: ${result.error}${result.detail ? ` — ${result.detail}` : ""}`,
           },
         ],
         isError: true,
@@ -263,6 +266,7 @@ export class LlmGatewayServer extends McpServer {
           text: `Likert scale analysis complete. Generated ${reports.length} report(s).`,
         },
       ],
+      tokenUsage: result.tokenUsage,
     };
   }
 }

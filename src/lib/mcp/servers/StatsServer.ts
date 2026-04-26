@@ -40,6 +40,10 @@ export class StatsServer extends McpServer {
                 type: "string",
                 description: "可选。数据集的展示名称，覆盖文件名的 stem",
               },
+              crossAnalysis: {
+                type: "boolean",
+                description: "可选。是否启用 LLM-guided 交叉分析（模式2/3 默认开启）",
+              },
             },
             required: ["filePath", "outputDir"],
           },
@@ -58,7 +62,8 @@ export class StatsServer extends McpServer {
           args.filePath as string,
           args.outputDir as string,
           args.llmMap as string | undefined,
-          args.datasetName as string | undefined
+          args.datasetName as string | undefined,
+          args.crossAnalysis as boolean | undefined
         );
       default:
         return {
@@ -72,7 +77,8 @@ export class StatsServer extends McpServer {
     filePath: string,
     outputDir: string,
     llmMap?: string,
-    datasetName?: string
+    datasetName?: string,
+    crossAnalysis?: boolean
   ): Promise<ToolCallResult> {
     if (!filePath || !outputDir) {
       return {
@@ -89,6 +95,7 @@ export class StatsServer extends McpServer {
     const args = [filePath, outputDir];
     if (llmMap) args.push("--llm-map", llmMap);
     if (datasetName) args.push("--dataset-name", datasetName);
+    if (crossAnalysis) args.push("--cross-analysis");
 
     const result = await spawnPython(
       resolveScript("analysis_engine/analyze_generic.py"),

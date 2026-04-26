@@ -8,9 +8,7 @@ import os
 import sys
 from pathlib import Path
 from openai import OpenAI
-
-def progress(msg):
-    print(f"[PROGRESS] {msg}", flush=True)
+from utils import progress, validate_path, sanitize_prompt_text
 
 # ── 环境变量加载 ──────────────────────────────────
 def _load_env():
@@ -29,6 +27,54 @@ _load_env()
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+def _track_usage(response):
+    """累加 API token 用量"""
+    global _token_usage
+    if hasattr(response, 'usage') and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_tokens"] += response.usage.total_tokens or 0
+
+def _print_tokens():
+    """打印 token 用量标记供 Node.js 解析"""
+    print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
+
+def _try_parse_json(text):
+    """尝试解析 JSON，成功返回对象，失败返回 None"""
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
+def _repair_truncated_json(text):
+    """
+    尝试修复被截断的 JSON。
+    策略：从末尾向前搜索，找到能闭合所有未闭合结构的最近位置。
+    """
+    # 先尝试最简单的修复：如果末尾缺少 }，补充它
+    stripped = text.rstrip()
+    # 找到最后一个 '}' 的位置
+    last_brace = stripped.rfind('}')
+    if last_brace > 0:
+        candidate = stripped[:last_brace + 1]
+        # 简单平衡性检查：数 { 和 }
+        open_count = candidate.count('{')
+        close_count = candidate.count('}')
+        if open_count == close_count:
+            return candidate
+        # 如果不平衡，尝试去掉最后一个不完整的键值对
+        # 找到倒数第二个 } 的位置
+        second_last = candidate.rfind('}', 0, last_brace)
+        if second_last > 0:
+            candidate2 = candidate[:second_last + 1]
+            if candidate2.count('{') == candidate2.count('}'):
+                return candidate2
+    return text
+
 
 def get_client():
     if not DEEPSEEK_API_KEY:
@@ -94,7 +140,7 @@ def build_likert_summary(data):
     for group_name, items in likert.items():
         if not items:
             continue
-        parts.append(f"\n## 量表组: {group_name}\n")
+        parts.append(f"\n## 量表组: {sanitize_prompt_text(group_name)}\n")
 
         # 计算组整体均值
         valid_means = [it['mean'] for it in items if 'mean' in it]
@@ -102,7 +148,7 @@ def build_likert_summary(data):
         parts.append(f"**组整体均值**: {group_mean:.2f} (满分5分)\n")
 
         for item in items:
-            label = item['column'][:80]
+            label = sanitize_prompt_text(item['column'][:80])
             mean = item.get('mean', 0)
             std = item.get('std', 0)
             median = item.get('median', 0)
@@ -172,8 +218,9 @@ def analyze_likert_scales(client, data):
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=4000,
+            max_tokens=8000,
         )
+        _track_usage(response)
 
         raw = response.choices[0].message.content.strip()
 
@@ -186,7 +233,12 @@ def analyze_likert_scales(client, data):
             raw = raw[:-3]
         raw = raw.strip()
 
-        result = json.loads(raw)
+        result = _try_parse_json(raw)
+        if result is None:
+            progress(f"  ✗ LLM 返回的不是合法 JSON，尝试修复截断内容...")
+            result = _try_parse_json(_repair_truncated_json(raw))
+        if result is None:
+            raise json.JSONDecodeError("无法解析 LLM 返回的 JSON", raw, 0)
 
         # 验证 concern_level 是否符合规则（后校验，防止 LLM 不遵守）
         for group in result.get("scale_groups", []):
@@ -218,7 +270,6 @@ def generate_markdown_report(data, json_result):
     ds_label = data.get("dataset", "问卷分析")
     n = data.get("total_records", 0)
 
-    lines.append(f"# {ds_label} — 量表深度分析报告\n")
     lines.append(f"*基于 DeepSeek LLM 分析 | 样本量: {n}*\n")
 
     for group in json_result.get("scale_groups", []):
@@ -268,8 +319,15 @@ def main():
         print("Usage: python3 likert_llm_analysis.py <mode1_result_json> [output_dir]")
         sys.exit(1)
 
-    result_path = Path(sys.argv[1])
-    out_dir = Path(sys.argv[2]) if len(sys.argv) > 2 else result_path.parent
+    try:
+        result_path = validate_path(sys.argv[1], must_exist=True)
+        out_dir = validate_path(sys.argv[2]) if len(sys.argv) > 2 else result_path.parent
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    result_path = Path(result_path)
+    out_dir = Path(out_dir) if not isinstance(out_dir, Path) else out_dir
 
     progress(f"加载分析数据: {result_path.name}...")
     data = json.loads(result_path.read_text('utf-8'))
@@ -326,7 +384,7 @@ def main():
         dst = public_dir / src.name
         dst.write_text(src.read_text('utf-8'))
     progress("报告已同步到 public/llm-reports/")
-
+    _print_tokens()
 
 if __name__ == '__main__':
     main()

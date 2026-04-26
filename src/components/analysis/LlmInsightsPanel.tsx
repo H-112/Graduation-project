@@ -45,8 +45,8 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
   if (reports.length === 0) {
     return (
       <div className="text-center py-12">
-        <Sparkles className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 text-sm">该数据集暂无 LLM 分析报告</p>
+        <Sparkles className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+        <p className="text-gray-500 dark:text-gray-400 text-sm">该数据集暂无 LLM 分析报告</p>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-500" />
           AI 深度洞察 (DeepSeek)
         </h3>
@@ -70,8 +70,8 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
             onClick={() => setActiveReport(file)}
             className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
               activeReport === file
-                ? "bg-purple-100 text-purple-700"
-                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400"
+                : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
             }`}
           >
             {label}
@@ -83,11 +83,11 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-          <span className="text-sm text-gray-500">加载中...</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">加载中...</span>
         </div>
       ) : (
-        <div className="bg-gray-50 rounded-xl p-6">
-          <h4 className="text-sm font-semibold text-gray-900 mb-4">{currentLabel}</h4>
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
+          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{currentLabel}</h4>
           <MarkdownRenderer content={content} />
         </div>
       )}

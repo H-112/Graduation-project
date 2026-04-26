@@ -55,6 +55,7 @@ export interface SkillInput {
   outputDir: string;
   datasetName?: string;
   mode: AnalysisMode;
+  crossAnalysis?: boolean;
   context: Record<string, unknown>;
 }
 

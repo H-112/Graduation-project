@@ -19,7 +19,7 @@ export default function HomePage() {
 
       {/* Analysis Modes */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">三种分析模式</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">三种分析模式</h3>
         <div className="grid grid-cols-3 gap-4">
           <ModeCard
             icon={BarChart3}
@@ -40,36 +40,36 @@ export default function HomePage() {
           <ModeCard
             icon={Brain}
             title="模式3 · 深度调研"
-            time="2-5分钟"
+            time="3-6分钟"
             color="amber"
-            features={["模式2所有能力", "五轮探索循环", "统计推断+关联挖掘", "完整研究报告"]}
-            note="自主Agent多轮假设验证"
+            features={["模式2所有能力", "五轮探索循环", "领域自适应理论映射", "可操作建议", "因果推断提示", "样本偏差诊断", "研究缺口分析", "完整研究报告"]}
+            note="6项独立深度洞察Skill，逐层递进"
           />
         </div>
       </div>
 
       {/* Datasets */}
       <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-4">已有分析数据</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">已有分析数据</h3>
         <div className="grid grid-cols-2 gap-4">
           {DATASETS.map((ds) => (
             <Link
               key={ds.id}
               href={`/datasets/${ds.id}`}
-              className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-blue-200 transition-all"
+              className="group bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg hover:border-blue-200 dark:hover:border-blue-800 transition-all"
             >
               <div className="flex items-start justify-between mb-3">
-                <h4 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                <h4 className="font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {ds.title}
                 </h4>
-                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-blue-500 transition-colors shrink-0" />
+                <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors shrink-0" />
               </div>
-              <p className="text-sm text-gray-500 mb-3 line-clamp-2">{ds.description}</p>
-              <div className="flex items-center gap-4 text-xs text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{ds.description}</p>
+              <div className="flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
                 <span>样本: {ds.records} 份</span>
                 <span>字段: {ds.fields} 列</span>
-                <span className="text-gray-300">|</span>
-                <span className="text-gray-500">{ds.source}</span>
+                <span className="text-gray-300 dark:text-gray-600">|</span>
+                <span className="text-gray-500 dark:text-gray-400">{ds.source}</span>
               </div>
             </Link>
           ))}
@@ -97,14 +97,14 @@ function ModeCard({
   disabled?: boolean;
 }) {
   const colors: Record<string, string> = {
-    blue: "border-blue-200 bg-blue-50/50",
-    purple: "border-purple-200 bg-purple-50/50",
-    amber: "border-amber-200 bg-amber-50/50",
+    blue: "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20",
+    purple: "border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20",
+    amber: "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20",
   };
   const iconColors: Record<string, string> = {
-    blue: "text-blue-600 bg-blue-100",
-    purple: "text-purple-600 bg-purple-100",
-    amber: "text-amber-600 bg-amber-100",
+    blue: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40",
+    purple: "text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/40",
+    amber: "text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40",
   };
 
   return (
@@ -114,8 +114,8 @@ function ModeCard({
           <Icon className="w-4 h-4" />
         </div>
         <div>
-          <h4 className="font-semibold text-sm text-gray-900">{title}</h4>
-          <div className="flex items-center gap-1 text-xs text-gray-500">
+          <h4 className="font-semibold text-sm text-gray-900 dark:text-gray-100">{title}</h4>
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
             <Clock className="w-3 h-3" />
             {time}
           </div>
@@ -123,13 +123,13 @@ function ModeCard({
       </div>
       <ul className="space-y-1 mb-3">
         {features.map((f) => (
-          <li key={f} className="text-xs text-gray-600 flex items-center gap-1.5">
-            <span className={`w-1 h-1 rounded-full ${disabled ? "bg-gray-300" : "bg-green-400"}`} />
+          <li key={f} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1.5">
+            <span className={`w-1 h-1 rounded-full ${disabled ? "bg-gray-300 dark:bg-gray-600" : "bg-green-400 dark:bg-green-500"}`} />
             {f}
           </li>
         ))}
       </ul>
-      <p className="text-[10px] text-gray-400 italic">{note}</p>
+      <p className="text-[10px] text-gray-400 dark:text-gray-500 italic">{note}</p>
     </div>
   );
 }

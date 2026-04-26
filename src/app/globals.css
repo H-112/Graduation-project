@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
+/* 启用 class-based dark mode：.dark 存在时 dark: 变体生效 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -13,4 +21,92 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* ============================================
+   打印样式
+   ============================================ */
+
+@media print {
+  /* 页面边距 */
+  @page {
+    margin: 1.2cm 1cm;
+  }
+
+  /* 隐藏导航和交互元素 */
+  nav,
+  .sidebar,
+  aside,
+  button,
+  [role="button"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* 强制 light mode */
+  :root {
+    color-scheme: light;
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+  .dark {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
+
+  /* 移除内容宽度限制，占满整页 */
+  .max-w-5xl,
+  .max-w-6xl,
+  .max-w-7xl {
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* 允许内容自然分页 —— 只在卡片/表格上防截断，避免成页空白 */
+  section {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  /* 防止独立卡片被劈开 */
+  .rounded-xl,
+  .rounded-lg {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 防止表格行被截断 */
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 确保背景色/图表颜色打印 */
+  * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* 表格打印边框 */
+  table {
+    border-collapse: collapse;
+  }
+  td,
+  th {
+    border: 1px solid #ccc;
+  }
+
+  /* 移除主内容区因 sidebar 产生的左 margin */
+  /* 提高特异性以覆盖 Tailwind .ml-64/.ml-16 */
+  main.min-h-screen {
+    margin-left: 0 !important;
+  }
+
+  /* 减少大间距 */
+  .space-y-12 > * + * {
+    margin-top: 1rem !important;
+  }
 }

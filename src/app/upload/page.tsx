@@ -6,8 +6,10 @@ import {
   Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle,
   BarChart3, Sparkles, Terminal, ChevronDown, Search,
 } from "lucide-react";
+import { useAnalysis } from "@/components/analysis/AnalysisProvider";
+import { AnalysisPipeline } from "@/components/analysis/AnalysisPipeline";
 
-type Status = "idle" | "uploading" | "uploaded" | "analyzing" | "done" | "error";
+type UploadStatus = "idle" | "uploading" | "uploaded";
 
 interface Preview {
   headers: string[];
@@ -29,37 +31,41 @@ interface AnalysisResult {
   llmReports?: { file: string; url: string }[];
   likertReports?: { file: string; url: string }[];
   deepResearchReport?: string;
-}
-
-interface ProgressEntry {
-  text: string;
-  stage: string;
-  timestamp: number;
+  theoryMapping?: string;
+  actionableInsights?: string;
+  researchGaps?: string;
+  causalHints?: string;
+  sampleBias?: string;
+  tokenUsage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [filePath, setFilePath] = useState<string>("");
   const [originalName, setOriginalName] = useState<string>("");
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [error, setError] = useState("");
-  const [errorDetail, setErrorDetail] = useState("");
   const [mode, setMode] = useState<"quick_overview" | "ai_insights" | "deep_research">("quick_overview");
-  const [progressLog, setProgressLog] = useState<ProgressEntry[]>([]);
-  const [showLog, setShowLog] = useState(true);
-  const [roundProgress, setRoundProgress] = useState<{ current: number; total: number; title: string } | null>(null);
+  const [showLog, setShowLog] = useState(false);
+
+  const { activeJob, startAnalysis, dismissJob } = useAnalysis();
   const router = useRouter();
   const dropRef = useRef<HTMLDivElement>(null);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Determine effective analysis status from activeJob
+  const analysisStatus = activeJob?.status ?? "idle";
 
   // Auto-scroll log
   useEffect(() => {
     if (logEndRef.current) {
       logEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [progressLog]);
+  }, [activeJob?.progressLog]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,9 +75,7 @@ export default function UploadPage() {
 
   const handleFile = async (f: File) => {
     setFile(f);
-    setStatus("uploading");
-    setError("");
-    setErrorDetail("");
+    setUploadStatus("uploading");
 
     const formData = new FormData();
     formData.append("file", f);
@@ -81,177 +85,48 @@ export default function UploadPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "上传失败");
-        setStatus("error");
+        setUploadStatus("idle");
         return;
       }
 
       setPreview(data.preview);
       setFilePath(data.savedPath);
       setOriginalName(data.originalName || data.filename || "");
-      setStatus("uploaded");
+      setUploadStatus("uploaded");
     } catch {
-      setError("网络错误");
-      setStatus("error");
+      setUploadStatus("idle");
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = () => {
     if (!filePath) return;
-    setStatus("analyzing");
-    setProgressLog([]);
-    setRoundProgress(null);
-    setShowLog(true);
-
-    try {
-      const response = await fetch("/api/analysis/trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath, mode, datasetName: originalName || file?.name || "" }),
-      });
-
-      if (!response.ok) {
-        setError(`请求失败 (HTTP ${response.status})`);
-        setStatus("error");
-        return;
-      }
-
-      // Read SSE stream
-      const reader = response.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const messages = buffer.split("\n\n");
-        buffer = messages.pop() || "";
-
-        for (const msg of messages) {
-          const lines = msg.split("\n");
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue;
-            try {
-              const event = JSON.parse(line.slice(6));
-              handleSSEEvent(event);
-            } catch {
-              // Skip malformed JSON
-            }
-          }
-        }
-      }
-      // Process remaining buffer
-      if (buffer.trim()) {
-        for (const line of buffer.split("\n")) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-            handleSSEEvent(event);
-          } catch { /* skip */ }
-        }
-      }
-    } catch (err) {
-      setError("分析请求失败，网络错误");
-      setErrorDetail(err instanceof Error ? err.message : String(err));
-      setStatus("error");
-    }
-  };
-
-  const handleSSEEvent = (event: Record<string, unknown>) => {
-    switch (event.type) {
-      case "progress": {
-        const msg = event.message as string;
-        // 解析 Mode 3 的 Round X/5 进度
-        const roundMatch = msg.match(/Round\s+(\d)\/(\d)[\s:：]+(.+)/);
-        if (roundMatch && mode === "deep_research") {
-          setRoundProgress({
-            current: parseInt(roundMatch[1], 10),
-            total: parseInt(roundMatch[2], 10),
-            title: roundMatch[3].trim(),
-          });
-        }
-        setProgressLog((prev) => [
-          ...prev,
-          {
-            text: msg,
-            stage: event.stage as string,
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-      }
-
-      case "log":
-        setProgressLog((prev) => [
-          ...prev,
-          {
-            text: event.message as string,
-            stage: (event.level as string) === "stderr" ? "stderr" : "log",
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-
-      case "result":
-        setResult({
-          resultUrl: event.resultUrl as string,
-          mode: event.mode as string,
-          summary: event.summary as AnalysisResult["summary"],
-          llmReports: event.llmReports as AnalysisResult["llmReports"],
-          likertReports: event.likertReports as AnalysisResult["likertReports"],
-          deepResearchReport: event.deepResearchReport as string | undefined,
-        });
-        setStatus("done");
-        break;
-
-      case "error": {
-        const errMsg = (event.error as string) || "分析失败";
-        const errDetail = (event.detail as string) || "";
-        setError(errMsg);
-        setErrorDetail(errDetail);
-        // If there's a fallback result, still show it
-        if (event.fallbackResult) {
-          const fb = event.fallbackResult as Record<string, unknown>;
-          setResult({
-            resultUrl: fb.resultUrl as string,
-            mode: fb.mode as string,
-            summary: {} as AnalysisResult["summary"],
-            llmReports: fb.llmReports as AnalysisResult["llmReports"],
-            likertReports: fb.likertReports as AnalysisResult["likertReports"],
-            deepResearchReport: fb.deepResearchReport as string | undefined,
-          });
-        }
-        setStatus("error");
-        break;
-      }
-
-      case "done":
-        break;
-    }
+    startAnalysis(filePath, mode, originalName || file?.name || "");
   };
 
   const handleViewResults = () => {
-    if (!result) return;
-    let navUrl = "";
-    if (result.resultUrl) {
-      navUrl = `/datasets/uploaded?url=${encodeURIComponent(result.resultUrl)}`;
-    } else {
-      navUrl = `/datasets/uploaded`;
+    if (!activeJob?.result) return;
+    const result = activeJob.result;
+    // 优先使用 analysis ID 生成短 URL
+    if (result.id) {
+      router.push(`/datasets/uploaded?id=${result.id}`);
+      return;
     }
+    // Fallback: 使用长 query string（向后兼容）
+    const params = new URLSearchParams();
+    if (result.resultUrl) params.set("url", result.resultUrl);
     if (result.llmReports && result.llmReports.length > 0) {
-      const reportNames = result.llmReports.map(r => encodeURIComponent(r.file)).join(",");
-      navUrl += `${navUrl.includes("?") ? "&" : "?"}reports=${reportNames}`;
+      params.set("reports", result.llmReports.map(r => encodeURIComponent(r.file)).join(","));
     }
-    if (result.deepResearchReport) {
-      navUrl += `${navUrl.includes("?") ? "&" : "?"}deepReport=${encodeURIComponent(result.deepResearchReport)}`;
-    }
+    if (result.deepResearchReport) params.set("deepReport", result.deepResearchReport);
     if (result.likertReports && result.likertReports.length > 0) {
-      const likertNames = result.likertReports.map(r => encodeURIComponent(r.file)).join(",");
-      navUrl += `${navUrl.includes("?") ? "&" : "?"}likertReports=${likertNames}`;
+      params.set("likertReports", result.likertReports.map(r => encodeURIComponent(r.file)).join(","));
     }
-    router.push(navUrl);
+    if (result.theoryMapping) params.set("theory", result.theoryMapping);
+    if (result.actionableInsights) params.set("actionable", result.actionableInsights);
+    if (result.researchGaps) params.set("gap", result.researchGaps);
+    if (result.causalHints) params.set("causal", result.causalHints);
+    if (result.sampleBias) params.set("bias", result.sampleBias);
+    router.push(`/datasets/uploaded?${params.toString()}`);
   };
 
   const stageLabel = (stage: string) => {
@@ -273,27 +148,27 @@ export default function UploadPage() {
     }
   };
 
-  const rowColor = (stage: string) => {
-    if (stage === "stderr") return "text-yellow-300";
-    return "text-gray-300";
-  };
+  const isAnalyzing = analysisStatus === "analyzing";
+  const isDone = analysisStatus === "done";
+  const isError = analysisStatus === "error";
+  const hasJob = activeJob !== null;
 
   return (
     <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">上传新问卷</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">上传新问卷</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           支持 CSV 和 Excel (.xlsx) 格式。上传后自动检测题型并运行分析。
         </p>
       </div>
 
-      {/* Upload area */}
-      {status === "idle" && (
+      {/* ── Upload area ── */}
+      {uploadStatus === "idle" && (
         <div
           ref={dropRef}
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
-          className="border-2 border-dashed border-gray-300 rounded-2xl p-16 text-center hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer"
+          className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-16 text-center hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 transition-all cursor-pointer"
           onClick={() => {
             const input = document.createElement("input");
             input.type = "file";
@@ -305,205 +180,199 @@ export default function UploadPage() {
             input.click();
           }}
         >
-          <Upload className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">拖拽 CSV/Excel 文件到此处</p>
-          <p className="text-sm text-gray-400 mt-1">或点击选择文件</p>
+          <Upload className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400 font-medium">拖拽 CSV/Excel 文件到此处</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">或点击选择文件</p>
         </div>
       )}
 
-      {/* Uploading */}
-      {status === "uploading" && (
+      {/* ── Uploading ── */}
+      {uploadStatus === "uploading" && (
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-3" />
-          <span className="text-gray-600">正在上传和解析...</span>
+          <span className="text-gray-600 dark:text-gray-400">正在上传和解析...</span>
         </div>
       )}
 
-      {/* Preview + Mode select + Progress */}
-      {(status === "uploaded" || status === "analyzing" || status === "done") && preview && (
-        <div className="space-y-4">
-          {/* File info */}
-          <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium text-green-800">{file?.name}</p>
-              <p className="text-xs text-green-600">
-                {preview.totalRows} 行 · {preview.headers.length} 列
-              </p>
-            </div>
+      {/* ── File info (persistent after upload) ── */}
+      {(uploadStatus === "uploaded" || hasJob) && preview && (
+        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <div>
+            <p className="font-medium text-green-800 dark:text-green-400">{file?.name}</p>
+            <p className="text-xs text-green-600 dark:text-green-400">
+              {preview.totalRows} 行 · {preview.headers.length} 列
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Preview table (only before analysis starts) ── */}
+      {uploadStatus === "uploaded" && !hasJob && preview && (
+        <details className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <summary className="px-4 py-2 cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center gap-1">
+            <ChevronDown className="w-3 h-3" /> 数据预览 ({preview.headers.length} 列)
+          </summary>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800">
+                  <th className="text-left p-2 text-gray-500 dark:text-gray-400 font-medium w-8">#</th>
+                  {preview.headers.slice(0, 8).map((h, i) => (
+                    <th key={i} className="text-left p-2 text-gray-700 dark:text-gray-300 font-medium max-w-[150px] truncate" title={h}>
+                      {h.length > 20 ? h.slice(0, 20) + "…" : h}
+                    </th>
+                  ))}
+                  {preview.headers.length > 8 && (
+                    <th className="text-left p-2 text-gray-400 dark:text-gray-500">+{preview.headers.length - 8} 列</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {preview.rows.map((row, i) => (
+                  <tr key={i} className="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="p-2 text-gray-400 dark:text-gray-500">{i + 1}</td>
+                    {row.slice(0, 8).map((cell, j) => (
+                      <td key={j} className="p-2 text-gray-600 dark:text-gray-400 max-w-[150px] truncate" title={cell}>
+                        {cell?.length > 30 ? cell.slice(0, 30) + "…" : cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      )}
+
+      {/* ── Mode selector (only before analysis starts) ── */}
+      {uploadStatus === "uploaded" && !hasJob && (
+        <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 space-y-4">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-200">选择分析模式</h4>
+          <div className="flex gap-3">
+            <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              mode === "quick_overview"
+                ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+            }`}>
+              <input
+                type="radio"
+                name="mode"
+                value="quick_overview"
+                checked={mode === "quick_overview"}
+                onChange={() => setMode("quick_overview")}
+                className="sr-only"
+              />
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">模式1 · 快速概览</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">15-30秒 · 描述性统计+NLP</p>
+            </label>
+
+            <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              mode === "ai_insights"
+                ? "border-purple-500 bg-purple-50 dark:bg-purple-950/30"
+                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+            }`}>
+              <input
+                type="radio"
+                name="mode"
+                value="ai_insights"
+                checked={mode === "ai_insights"}
+                onChange={() => setMode("ai_insights")}
+                className="sr-only"
+              />
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">模式2 · AI洞察</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">1-2分钟 · 含LLM深度分析</p>
+            </label>
+
+            <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+              mode === "deep_research"
+                ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
+                : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600"
+            }`}>
+              <input
+                type="radio"
+                name="mode"
+                value="deep_research"
+                checked={mode === "deep_research"}
+                onChange={() => setMode("deep_research")}
+                className="sr-only"
+              />
+              <div className="flex items-center gap-2 mb-1">
+                <Search className="w-4 h-4 text-amber-600" />
+                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">模式3 · 深度研究</span>
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">2-5分钟 · 五轮探索循环</p>
+            </label>
           </div>
 
-          {/* Preview table (compact, collapsed when analyzing) */}
-          {status !== "analyzing" && (
-            <details className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <summary className="px-4 py-2 cursor-pointer text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1">
-                <ChevronDown className="w-3 h-3" /> 数据预览 ({preview.headers.length} 列)
-              </summary>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left p-2 text-gray-500 font-medium w-8">#</th>
-                      {preview.headers.slice(0, 8).map((h, i) => (
-                        <th key={i} className="text-left p-2 text-gray-700 font-medium max-w-[150px] truncate" title={h}>
-                          {h.length > 20 ? h.slice(0, 20) + "…" : h}
-                        </th>
-                      ))}
-                      {preview.headers.length > 8 && (
-                        <th className="text-left p-2 text-gray-400">+{preview.headers.length - 8} 列</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.rows.map((row, i) => (
-                      <tr key={i} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="p-2 text-gray-400">{i + 1}</td>
-                        {row.slice(0, 8).map((cell, j) => (
-                          <td key={j} className="p-2 text-gray-600 max-w-[150px] truncate" title={cell}>
-                            {cell?.length > 30 ? cell.slice(0, 30) + "…" : cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
+          <button
+            onClick={handleAnalyze}
+            className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+          >
+            开始分析
+          </button>
+        </div>
+      )}
+
+      {/* ── Active / recovered analysis job ── */}
+      {hasJob && (
+        <div className="space-y-4">
+          {/* Visual Pipeline Stepper */}
+          {(isAnalyzing || activeJob!.progressLog.length > 0) && (
+            <AnalysisPipeline
+              mode={activeJob!.mode}
+              logs={activeJob!.progressLog}
+              isAnalyzing={isAnalyzing}
+              roundProgress={activeJob!.roundProgress}
+            />
           )}
 
-          {/* Mode selector — only before analysis */}
-          {status === "uploaded" && (
-            <div className="bg-gray-50 rounded-xl p-5 space-y-4">
-              <h4 className="font-semibold text-gray-800">选择分析模式</h4>
-              <div className="flex gap-3">
-                <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  mode === "quick_overview"
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}>
-                  <input
-                    type="radio"
-                    name="mode"
-                    value="quick_overview"
-                    checked={mode === "quick_overview"}
-                    onChange={() => setMode("quick_overview")}
-                    className="sr-only"
-                  />
-                  <div className="flex items-center gap-2 mb-1">
-                    <BarChart3 className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium text-sm text-gray-900">模式1 · 快速概览</span>
-                  </div>
-                  <p className="text-xs text-gray-500">15-30秒 · 描述性统计+NLP</p>
-                </label>
-
-                <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  mode === "ai_insights"
-                    ? "border-purple-500 bg-purple-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}>
-                  <input
-                    type="radio"
-                    name="mode"
-                    value="ai_insights"
-                    checked={mode === "ai_insights"}
-                    onChange={() => setMode("ai_insights")}
-                    className="sr-only"
-                  />
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-purple-600" />
-                    <span className="font-medium text-sm text-gray-900">模式2 · AI洞察</span>
-                  </div>
-                  <p className="text-xs text-gray-500">1-2分钟 · 含LLM深度分析</p>
-                </label>
-
-                <label className={`flex-1 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  mode === "deep_research"
-                    ? "border-amber-500 bg-amber-50"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}>
-                  <input
-                    type="radio"
-                    name="mode"
-                    value="deep_research"
-                    checked={mode === "deep_research"}
-                    onChange={() => setMode("deep_research")}
-                    className="sr-only"
-                  />
-                  <div className="flex items-center gap-2 mb-1">
-                    <Search className="w-4 h-4 text-amber-600" />
-                    <span className="font-medium text-sm text-gray-900">模式3 · 深度研究</span>
-                  </div>
-                  <p className="text-xs text-gray-500">2-5分钟 · 五轮探索循环</p>
-                </label>
-              </div>
-
-              <button
-                onClick={handleAnalyze}
-                className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
-              >
-                开始分析
-              </button>
-            </div>
-          )}
-
-          {/* ── Progress log during analysis ── */}
-          {status === "analyzing" && (
+          {/* Detailed log (collapsible) */}
+          {(isAnalyzing || activeJob!.progressLog.length > 0) && (
             <div className="bg-gray-900 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-xs text-gray-300 font-medium">分析进度</span>
-                  {progressLog.length > 0 && (
+                  <span className="text-xs text-gray-300 font-medium">
+                    {isAnalyzing ? "详细日志" : "分析日志"}
+                  </span>
+                  {activeJob!.progressLog.length > 0 && (
                     <span className="text-xs text-gray-500">
-                      ({progressLog.length} 条消息)
+                      ({activeJob!.progressLog.length} 条)
                     </span>
                   )}
                 </div>
-                <button
-                  onClick={() => setShowLog(!showLog)}
-                  className="text-xs text-gray-500 hover:text-gray-300"
-                >
-                  {showLog ? "收起" : "展开"}
-                </button>
+                <div className="flex items-center gap-2">
+                  {isDone && (
+                    <span className="text-xs text-green-400 font-medium">已完成</span>
+                  )}
+                  {isError && (
+                    <span className="text-xs text-red-400 font-medium">失败</span>
+                  )}
+                  <button
+                    onClick={() => setShowLog(!showLog)}
+                    className="text-xs text-gray-500 hover:text-gray-300"
+                  >
+                    {showLog ? "收起" : "展开"}
+                  </button>
+                </div>
               </div>
 
-              {/* Mode 3 五轮进度指示器 */}
-              {mode === "deep_research" && roundProgress && (
-                <div className="px-4 py-3 bg-gray-800 border-b border-gray-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-amber-400">
-                      第 {roundProgress.current}/{roundProgress.total} 轮
-                    </span>
-                    <span className="text-xs text-gray-400 truncate max-w-[200px]">
-                      {roundProgress.title}
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5">
-                    {Array.from({ length: roundProgress.total }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-all ${
-                          i < roundProgress.current
-                            ? "bg-amber-500"
-                            : i === roundProgress.current - 1
-                            ? "bg-amber-500 animate-pulse"
-                            : "bg-gray-600"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {showLog && (
-                <div className="p-3 space-y-1 max-h-80 overflow-y-auto font-mono text-xs">
-                  {progressLog.length === 0 && (
+                <div className="p-3 space-y-1 max-h-60 overflow-y-auto font-mono text-xs">
+                  {activeJob!.progressLog.length === 0 && isAnalyzing && (
                     <div className="flex items-center gap-2 text-gray-500 py-8 justify-center">
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>等待分析引擎启动...</span>
                     </div>
                   )}
-                  {progressLog.map((entry, i) => (
+                  {activeJob!.progressLog.map((entry, i) => (
                     <div key={i} className="flex gap-2 items-start">
                       <span className="text-gray-600 shrink-0 w-12 text-right">
                         {new Date(entry.timestamp).toLocaleTimeString("zh-CN", { hour12: false })}
@@ -519,154 +388,167 @@ export default function UploadPage() {
                   <div ref={logEndRef} />
                 </div>
               )}
+            </div>
+          )}
 
-              {/* Live spinner */}
-              <div className="flex items-center gap-2 px-4 py-2 bg-gray-800 border-t border-gray-700">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-                <span className="text-xs text-gray-400">
-                  {mode === "quick_overview"
-                    ? "模式1 · 统计分析中..."
-                    : mode === "ai_insights"
-                    ? "模式2 · LLM 深度分析中..."
-                    : "模式3 · 深度研究分析中..."}
-                </span>
-                <span className="text-xs text-gray-500 ml-auto">
-                  {mode === "quick_overview"
-                    ? "预计 15-30 秒"
-                    : mode === "ai_insights"
-                    ? "预计 1-2 分钟"
-                    : "预计 2-5 分钟"}
-                </span>
+          {/* ── Done ── */}
+          {isDone && activeJob!.result && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-xl border border-green-200 dark:border-green-800">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="font-medium text-green-800 dark:text-green-400">
+                    分析完成 ({activeJob!.result.mode === "deep_research"
+                      ? "模式3 · 深度研究"
+                      : activeJob!.result.mode === "ai_insights"
+                      ? "模式2 · AI洞察"
+                      : "模式1 · 快速概览"})
+                  </p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {activeJob!.result.summary.records} 条记录 · {activeJob!.result.summary.fields} 个字段
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* ── Done ── */}
-      {status === "done" && result && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium text-green-800">
-                分析完成 ({result.mode === "deep_research"
-                  ? "模式3 · 深度研究"
-                  : result.mode === "ai_insights"
-                  ? "模式2 · AI洞察"
-                  : "模式1 · 快速概览"})
-              </p>
-              <p className="text-xs text-green-600">
-                {result.summary.records} 条记录 · {result.summary.fields} 个字段
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <StatBadge label="人口学维度" value={result.summary.demographics} color="blue" />
-            <StatBadge label="量表题组" value={result.summary.likertGroups} color="purple" />
-            <StatBadge label="文本分析" value={result.summary.textFields} color="green" />
-          </div>
-
-          {/* Deep Research Report */}
-          {result.deepResearchReport && (
-            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
-              <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                <Search className="w-4 h-4" />
-                深度研究报告
-              </h4>
-              <a
-                href={result.deepResearchReport}
-                target="_blank"
-                className="block text-sm text-amber-600 hover:text-amber-800 underline"
-              >
-                查看完整深度研究报告
-              </a>
-            </div>
-          )}
-
-          {/* LLM Report links */}
-          {result.llmReports && result.llmReports.length > 0 && (
-            <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
-              <h4 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                AI 洞察报告 ({result.llmReports.length} 份)
-              </h4>
-              <div className="space-y-1">
-                {result.llmReports.map((r, i) => (
-                  <a
-                    key={i}
-                    href={r.url}
-                    target="_blank"
-                    className="block text-sm text-purple-600 hover:text-purple-800 underline"
-                  >
-                    {r.file}
-                  </a>
-                ))}
+              <div className="grid grid-cols-3 gap-3">
+                <StatBadge label="人口学维度" value={activeJob!.result.summary.demographics} color="blue" />
+                <StatBadge label="量表题组" value={activeJob!.result.summary.likertGroups} color="purple" />
+                <StatBadge label="文本分析" value={activeJob!.result.summary.textFields} color="green" />
               </div>
-            </div>
-          )}
 
-          <button
-            onClick={handleViewResults}
-            className="w-full py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            查看分析结果
-          </button>
-        </div>
-      )}
-
-      {/* ── Error ── */}
-      {status === "error" && (
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 p-4 bg-red-50 rounded-xl border border-red-200">
-            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-medium text-red-800">分析失败</p>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
-              {errorDetail && (
-                <details className="mt-2">
-                  <summary className="text-xs text-red-500 cursor-pointer hover:text-red-600">
-                    查看详细错误
-                  </summary>
-                  <pre className="mt-2 p-3 bg-red-100 rounded-lg text-xs text-red-700 overflow-x-auto whitespace-pre-wrap max-h-60">
-                    {errorDetail}
-                  </pre>
-                </details>
-              )}
-            </div>
-            <button
-              onClick={() => { setStatus("idle"); setFile(null); setError(""); setErrorDetail(""); setProgressLog([]); }}
-              className="text-sm text-red-600 hover:text-red-700 shrink-0"
-            >
-              重试
-            </button>
-          </div>
-
-          {/* Show progress log even on error */}
-          {progressLog.length > 0 && (
-            <details className="bg-gray-50 rounded-xl border border-gray-200">
-              <summary className="px-4 py-2 text-sm text-gray-500 cursor-pointer">
-                查看分析日志 ({progressLog.length} 条)
-              </summary>
-              <div className="p-3 space-y-0.5 font-mono text-xs max-h-40 overflow-y-auto">
-                {progressLog.map((entry, i) => (
-                  <div key={i} className={`${entry.stage === "stderr" ? "text-red-500" : "text-gray-500"}`}>
-                    [{entry.stage}] {entry.text}
+              {/* Token Usage */}
+              {activeJob!.result.tokenUsage && (
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+                  <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                    LLM Token 用量
+                  </h4>
+                  <div className="flex gap-4">
+                    <div>
+                      <p className="text-lg font-bold text-gray-800 dark:text-gray-200">{activeJob!.result.tokenUsage.total_tokens.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">总计</p>
+                    </div>
+                    <div className="w-px bg-gray-200 dark:bg-gray-700" />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{activeJob!.result.tokenUsage.prompt_tokens.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">输入 (Prompt)</p>
+                    </div>
+                    <div className="w-px bg-gray-200 dark:bg-gray-700" />
+                    <div>
+                      <p className="text-sm font-semibold text-green-600 dark:text-green-400">{activeJob!.result.tokenUsage.completion_tokens.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">输出 (Completion)</p>
+                    </div>
                   </div>
-                ))}
+                </div>
+              )}
+
+              {/* Deep Research Report */}
+              {activeJob!.result.deepResearchReport && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
+                  <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-2">
+                    <Search className="w-4 h-4" />
+                    深度研究报告
+                  </h4>
+                  <a
+                    href={activeJob!.result.deepResearchReport}
+                    target="_blank"
+                    className="block text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 underline"
+                  >
+                    查看完整深度研究报告
+                  </a>
+                </div>
+              )}
+
+              {/* LLM Report links */}
+              {activeJob!.result.llmReports && activeJob!.result.llmReports.length > 0 && (
+                <div className="bg-purple-50 dark:bg-purple-950/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
+                  <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-400 mb-2 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI 洞察报告 ({activeJob!.result.llmReports.length} 份)
+                  </h4>
+                  <div className="space-y-1">
+                    {activeJob!.result.llmReports.map((r, i) => (
+                      <a
+                        key={i}
+                        href={r.url}
+                        target="_blank"
+                        className="block text-sm text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 underline"
+                      >
+                        {r.file}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleViewResults}
+                  className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  查看分析结果
+                </button>
+                <button
+                  onClick={dismissJob}
+                  className="px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                >
+                  清除
+                </button>
               </div>
-            </details>
+            </div>
           )}
 
-          {/* If error but we have a fallback result */}
-          {result?.resultUrl && (
-            <button
-              onClick={handleViewResults}
-              className="w-full py-3 bg-gray-600 text-white font-medium rounded-xl hover:bg-gray-700 transition-colors"
-            >
-              查看部分分析结果（仅模式1）
-            </button>
+          {/* ── Error ── */}
+          {isError && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/30 rounded-xl border border-red-200 dark:border-red-800">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="font-medium text-red-800 dark:text-red-400">分析失败</p>
+                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">{activeJob!.error}</p>
+                  {activeJob!.errorDetail && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-red-500 dark:text-red-400 cursor-pointer hover:text-red-600">
+                        查看详细错误
+                      </summary>
+                      <pre className="mt-2 p-3 bg-red-100 dark:bg-red-900/40 rounded-lg text-xs text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap max-h-60">
+                        {activeJob!.errorDetail}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </div>
+
+              {/* If error but we have a fallback result */}
+              {activeJob!.result?.resultUrl && (
+                <button
+                  onClick={handleViewResults}
+                  className="w-full py-3 bg-gray-600 text-white font-medium rounded-xl hover:bg-gray-700 transition-colors"
+                >
+                  查看部分分析结果（仅模式1）
+                </button>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setUploadStatus("idle");
+                    setFile(null);
+                    setPreview(null);
+                    setFilePath("");
+                    dismissJob();
+                  }}
+                  className="flex-1 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors"
+                >
+                  上传新文件
+                </button>
+                <button
+                  onClick={dismissJob}
+                  className="px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-medium rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
+                >
+                  清除
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -676,9 +558,9 @@ export default function UploadPage() {
 
 function StatBadge({ label, value, color }: { label: string; value: number | string; color: string }) {
   const colors: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-700",
-    purple: "bg-purple-50 text-purple-700",
-    green: "bg-green-50 text-green-700",
+    blue: "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400",
+    purple: "bg-purple-50 dark:bg-purple-950/30 text-purple-700 dark:text-purple-400",
+    green: "bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400",
   };
   return (
     <div className={`rounded-xl p-4 text-center ${colors[color]}`}>

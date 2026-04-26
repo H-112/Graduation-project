@@ -3,6 +3,7 @@
 // 每个 MCP Server 继承此类，实现 executeTool 方法
 // ============================================
 
+import { AsyncLocalStorage } from "async_hooks";
 import type {
   JsonRpcRequest,
   JsonRpcResponse,
@@ -15,21 +16,19 @@ export abstract class McpServer {
   /** 服务器清单 — 描述能力和提供的工具 */
   abstract readonly manifest: ServerManifest;
 
-  private _progressCb?: (msg: string) => void;
-
-  /** 设置进度回调（由 McpClient.callTool 注入） */
-  setProgressCallback(cb?: (msg: string) => void): void {
-    this._progressCb = cb;
-  }
+  private _progressStorage = new AsyncLocalStorage<(msg: string) => void>();
 
   /** 子类在执行工具时调用，将进度消息回传至 SSE */
   protected reportProgress(msg: string): void {
-    this._progressCb?.(msg);
+    this._progressStorage.getStore()?.(msg);
   }
 
   // ── 核心协议路由 ──
 
-  async handleRequest(request: JsonRpcRequest): Promise<JsonRpcResponse> {
+  async handleRequest(
+    request: JsonRpcRequest,
+    onProgress?: (msg: string) => void
+  ): Promise<JsonRpcResponse> {
     const { id, method } = request;
 
     switch (method) {
@@ -38,10 +37,12 @@ export abstract class McpServer {
       case MCP_METHODS.TOOLS_LIST:
         return this._listTools(id);
       case MCP_METHODS.TOOLS_CALL:
-        return this._callTool(id, request.params as {
-          name: string;
-          arguments: Record<string, unknown>;
-        });
+        return this._progressStorage.run(onProgress ?? (() => {}), () =>
+          this._callTool(id, request.params as {
+            name: string;
+            arguments: Record<string, unknown>;
+          })
+        );
       default:
         return jsonRpcErr(id, JSON_RPC_ERRORS.METHOD_NOT_FOUND, `Unknown method: ${method}`);
     }

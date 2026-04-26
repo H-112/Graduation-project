@@ -13,6 +13,7 @@ import sys
 import re
 import time
 from pathlib import Path
+from utils import progress, validate_path, sanitize_prompt_text
 from collections import Counter, defaultdict
 from typing import Any
 
@@ -45,10 +46,21 @@ try:
 except ImportError:
     OpenAI = None
 
-# ── 工具函数 ────────────────────────────────────
+_token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
-def progress(msg: str) -> None:
-    print(f"[PROGRESS] {msg}", flush=True)
+def _track_usage(response):
+    """累加 API token 用量"""
+    global _token_usage
+    if hasattr(response, 'usage') and response.usage:
+        _token_usage["prompt_tokens"] += response.usage.prompt_tokens or 0
+        _token_usage["completion_tokens"] += response.usage.completion_tokens or 0
+        _token_usage["total_tokens"] += response.usage.total_tokens or 0
+
+def _print_tokens():
+    """打印 token 用量标记供 Node.js 解析"""
+    print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
+
+# ── 工具函数 ────────────────────────────────────
 
 def load_env():
     env_file = Path(__file__).parent.parent / ".env"
@@ -454,7 +466,7 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
         progress(f"  已加载 {len(llm_reports_content)} 份 Mode 2 报告")
 
     # 构建上下文摘要
-    ds_label = data.get('dataset', '未知问卷')
+    ds_label = sanitize_prompt_text(data.get('dataset', '未知问卷'))
     n = data.get('total_records', 0)
 
     context_parts = [
@@ -468,14 +480,14 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
     context_parts.append(f"\n## Round 1: 人口学交叉分析\n")
     context_parts.append(f"检测 {r1['total_pairs']} 对维度，发现 {r1['significant']} 组显著关联\n")
     for f in r1['findings'][:5]:
-        context_parts.append(f"- {f['dimension_a']} × {f['dimension_b']}: χ²={f['chi2']}, p={f['p_value']}\n")
+        context_parts.append(f"- {sanitize_prompt_text(f['dimension_a'])} × {sanitize_prompt_text(f['dimension_b'])}: χ²={f['chi2']}, p={f['p_value']}\n")
 
     # Round 2 摘要
     r2 = round_results[1]
     context_parts.append(f"\n## Round 2: 量表群体差异\n")
     context_parts.append(f"执行 {r2['total_tests']} 次检验，发现 {r2['significant']} 组显著差异\n")
     for f in r2['findings'][:5]:
-        context_parts.append(f"- {f['likert_column'][:50]} × {f['grouping_column'][:30]}: {f['test']}={f['statistic']}, p={f['p_value']}\n")
+        context_parts.append(f"- {sanitize_prompt_text(f['likert_column'][:50])} × {sanitize_prompt_text(f['grouping_column'][:30])}: {f['test']}={f['statistic']}, p={f['p_value']}\n")
 
     # Round 3 摘要
     r3 = round_results[2]
@@ -483,14 +495,14 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
     context_parts.append(f"分析 {len(r3['findings'])} 道开放题，共 {r3['total_texts']} 条回答\n")
     for f in r3['findings'][:3]:
         s = f['sentiment']
-        context_parts.append(f"- {f['column'][:50]}: 正{s['positive']['percentage']}% 中{s['neutral']['percentage']}% 负{s['negative']['percentage']}%\n")
+        context_parts.append(f"- {sanitize_prompt_text(f['column'][:50])}: 正{s['positive']['percentage']}% 中{s['neutral']['percentage']}% 负{s['negative']['percentage']}%\n")
 
     # Round 4 摘要
     r4 = round_results[3]
     context_parts.append(f"\n## Round 4: 关联规则挖掘\n")
     context_parts.append(f"发现 {r4['total_rules']} 条规则，{r4['strong_rules']} 条强规则\n")
     for f in r4['rules'][:5]:
-        context_parts.append(f"- {f['antecedent'][:50]} → {f['consequent'][:50]} (置信度 {f['confidence']}, 提升度 {f['lift']})\n")
+        context_parts.append(f"- {sanitize_prompt_text(f['antecedent'][:50])} → {sanitize_prompt_text(f['consequent'][:50])} (置信度 {f['confidence']}, 提升度 {f['lift']})\n")
 
     # Likert 量表摘要
     likert = data.get('likert_scales', {})
@@ -498,7 +510,7 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
         context_parts.append(f"\n## 量表得分摘要\n")
         for group, items in likert.items():
             for item in items:
-                context_parts.append(f"- {item['column'][:60]}: 均值={item['mean']}, 标准差={item['std']}\n")
+                context_parts.append(f"- {sanitize_prompt_text(item['column'][:60])}: 均值={item['mean']}, 标准差={item['std']}\n")
 
     # Mode 2 LLM 报告摘要
     if llm_reports_content:
@@ -509,13 +521,11 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
 
     context = ''.join(context_parts)
 
-    prompt = f"""你是资深社会科学研究顾问和数据科学家。请基于以下多轮深度分析的结果（包括 Mode 1 统计分析、Mode 2 LLM 逐题洞察，以及 Mode 3 的五轮深度探索），撰写一份专业的深度研究报告。
+    prompt = f"""基于以下多轮深度分析的结果（包括 Mode 1 统计分析、Mode 2 LLM 逐题洞察，以及 Mode 3 的五轮深度探索），直接输出报告内容，不要写开场白、自我介绍或"作为...顾问"等套话。
 
 {context}
 
-请按以下结构撰写报告（2000字以内，使用专业学术语言）：
-
-# {ds_label} — 深度研究报告
+请按以下结构撰写报告（2000字以内，使用专业学术语言，直奔主题，不要写总标题）：
 
 ## 一、研究概述
 简要说明研究目的、样本特征和分析方法。
@@ -544,12 +554,13 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
         response = client.chat.completions.create(
             model="deepseek-chat",
             messages=[
-                {"role": "system", "content": "你是资深社会科学研究顾问，擅长从多维度数据中提炼深层洞察并撰写高质量研究报告。"},
+                {"role": "system", "content": "你是资深社会科学研究顾问，擅长从多维度数据中提炼深层洞察并撰写高质量研究报告。输出必须简洁直接，禁止写开场白、自我介绍和套话。"},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
             max_tokens=4000,
         )
+        _track_usage(response)
         report = response.choices[0].message.content
         progress("  ✓ LLM 综合报告生成成功")
         return report
@@ -559,8 +570,7 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
 
 def _generate_fallback_report(data: dict, round_results: list) -> str:
     """LLM 不可用时生成基础报告"""
-    ds_label = data.get('dataset', '未知问卷')
-    lines = [f"# {ds_label} — 深度研究报告", ""]
+    lines = []
     lines.append("> 本报告由智能体辅助问卷分析系统自动生成（Mode 3 深度研究）")
     lines.append("")
     lines.append("## 一、研究概述")
@@ -600,9 +610,15 @@ def main():
         print("Usage: python3 deep_research.py <input_json> <raw_file> <output_dir>")
         sys.exit(1)
 
-    input_json = sys.argv[1]
-    raw_file = sys.argv[2]
-    output_dir = Path(sys.argv[3])
+    try:
+        input_json = validate_path(sys.argv[1], must_exist=True)
+        raw_file = validate_path(sys.argv[2], must_exist=True)
+        output_dir = validate_path(sys.argv[3])
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     progress(f"深度研究 Agent 启动")
@@ -657,6 +673,7 @@ def main():
 
     progress("深度研究 Agent 完成!")
     print(f"[RESULT] {report_path}", flush=True)
+    _print_tokens()
 
 if __name__ == '__main__':
     main()

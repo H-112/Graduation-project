@@ -117,6 +117,7 @@ export class DeepResearchServer extends McpServer {
         { type: "text", text: reportPath },
         { type: "json", data: { deepResearchReport: reportPath } },
       ],
+      tokenUsage: result.tokenUsage,
     };
   }
 }

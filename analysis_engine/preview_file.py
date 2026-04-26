@@ -6,9 +6,17 @@ import sys
 import json
 import csv
 from pathlib import Path
+from utils import validate_path
 
 def main():
-    filepath = Path(sys.argv[1])
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "缺少文件路径参数", "headers": [], "rows": [], "totalRows": 0}))
+        sys.exit(1)
+    try:
+        filepath = validate_path(sys.argv[1], must_exist=True)
+    except (ValueError, FileNotFoundError) as e:
+        print(json.dumps({"error": str(e), "headers": [], "rows": [], "totalRows": 0}))
+        sys.exit(1)
     ext = filepath.suffix.lower()
 
     try:

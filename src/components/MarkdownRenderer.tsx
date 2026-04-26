@@ -15,7 +15,7 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
   const blocks = useMemo(() => parseMarkdown(content), [content]);
 
   return (
-    <div className={`text-sm text-gray-700 leading-relaxed space-y-3 ${className}`}>
+    <div className={`text-sm text-gray-700 dark:text-gray-300 leading-relaxed space-y-3 ${className}`}>
       {blocks.map((block, i) => (
         <BlockElement key={i} block={block} />
       ))}
@@ -148,12 +148,12 @@ function BlockElement({ block }: { block: Block }) {
   switch (block.type) {
     case "heading": {
       const sizes: Record<number, string> = {
-        1: "text-xl font-bold text-gray-900 mt-2",
-        2: "text-lg font-bold text-gray-900 mt-4",
-        3: "text-base font-bold text-gray-900 mt-4",
-        4: "text-sm font-bold text-gray-900 mt-3",
-        5: "text-sm font-semibold text-gray-900 mt-2",
-        6: "text-xs font-semibold text-gray-900 mt-2",
+        1: "text-xl font-bold text-gray-900 dark:text-gray-100 mt-2",
+        2: "text-lg font-bold text-gray-900 dark:text-gray-100 mt-4",
+        3: "text-base font-bold text-gray-900 dark:text-gray-100 mt-4",
+        4: "text-sm font-bold text-gray-900 dark:text-gray-100 mt-3",
+        5: "text-sm font-semibold text-gray-900 dark:text-gray-100 mt-2",
+        6: "text-xs font-semibold text-gray-900 dark:text-gray-100 mt-2",
       };
       return (
         <div className={sizes[block.level] || sizes[3]}>
@@ -163,7 +163,7 @@ function BlockElement({ block }: { block: Block }) {
     }
     case "paragraph":
       return (
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           <InlineMarkdown text={block.text} />
         </p>
       );
@@ -171,7 +171,7 @@ function BlockElement({ block }: { block: Block }) {
       return (
         <ul className="list-disc list-inside space-y-1">
           {block.items.map((item, idx) => (
-            <li key={idx} className="text-gray-600">
+            <li key={idx} className="text-gray-600 dark:text-gray-400">
               <InlineMarkdown text={item} />
             </li>
           ))}
@@ -181,7 +181,7 @@ function BlockElement({ block }: { block: Block }) {
       return (
         <ol className="list-decimal list-inside space-y-1" start={block.start}>
           {block.items.map((item, idx) => (
-            <li key={idx} className="text-gray-600">
+            <li key={idx} className="text-gray-600 dark:text-gray-400">
               <InlineMarkdown text={item} />
             </li>
           ))}
@@ -189,14 +189,14 @@ function BlockElement({ block }: { block: Block }) {
       );
     case "blockquote":
       return (
-        <blockquote className="border-l-4 border-amber-300 pl-3 py-1 my-2 bg-amber-50/50 italic text-gray-600">
+        <blockquote className="border-l-4 border-amber-300 dark:border-amber-700 pl-3 py-1 my-2 bg-amber-50/50 dark:bg-amber-950/20 italic text-gray-600 dark:text-gray-400">
           {block.lines.map((line, idx) => (
             <p key={idx}><InlineMarkdown text={line} /></p>
           ))}
         </blockquote>
       );
     case "hr":
-      return <hr className="my-4 border-gray-200" />;
+      return <hr className="my-4 border-gray-200 dark:border-gray-700" />;
     case "code":
       return (
         <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-xs font-mono my-3">
@@ -209,7 +209,7 @@ function BlockElement({ block }: { block: Block }) {
 }
 
 /** 行内 Markdown: 粗体 **text** 和斜体 *text* */
-function InlineMarkdown({ text }: { text: string }) {
+export function InlineMarkdown({ text }: { text: string }) {
   // 使用闭包计数器确保所有递归调用中的 key 全局唯一
   let keyCounter = 0;
   function nextKey(): string {

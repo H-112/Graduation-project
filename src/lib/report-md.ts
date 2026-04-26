@@ -33,7 +33,7 @@ export function generateMarkdownReport(
     if (c.removed_empty > 0) lines.push(`| 去除空行 | ${c.removed_empty} |`);
     if (c.removed_duplicates > 0) lines.push(`| 去除重复 | ${c.removed_duplicates} |`);
     if (c.removed_low_quality > 0) lines.push(`| 去除低质量 (>80%缺失) | ${c.removed_low_quality} |`);
-    if ((c.removed_skips || 0) > 0) lines.push(`| 去除跳过标记 | ${c.removed_skips} |`);
+    if ((c.removed_skips || 0) > 0) lines.push(`| 跳过标记置空（单元格） | ${c.removed_skips} |`);
     lines.push(`| **最终有效** | **${c.final_count}** |`);
     lines.push(`| **留存率** | **${c.retention_rate}%** |`);
   } else {
@@ -110,15 +110,74 @@ export function generateMarkdownReport(
     }
   }
 
-  // ── 五、文本关键词分析 ──
+  // ── 五、交叉分析发现 ──
+  const crossData = data.cross_analysis || [];
+  if (crossData.length > 0) {
+    lines.push("## 五、交叉分析发现");
+    lines.push("");
+    for (const item of crossData) {
+      lines.push(`### ${item.title}`);
+      if (item.description) lines.push(item.description);
+      lines.push("");
+      lines.push(`- 显著性: ${item.is_significant ? "显著相关" : "不显著"} (p=${item.p_value}, Cramér's V=${item.cramers_v})`);
+      lines.push(`- 样本量: ${item.sample_size}`);
+      lines.push("");
+      if (item.insight) {
+        lines.push(`> ${item.insight}`);
+        lines.push("");
+      }
+      // 交叉表
+      if (item.crosstab?.length > 0) {
+        const bLabels = item.crosstab[0].values.map((v: {label: string}) => v.label);
+        lines.push(`| ${item.var_a.label} | ${bLabels.join(" | ")} |`);
+        lines.push(`|${"------|".repeat(bLabels.length + 1)}`);
+        for (const row of item.crosstab) {
+          const cells = row.values.map((v: {percentage: number; count: number}) => `${v.percentage}% (${v.count})`);
+          lines.push(`| ${row.label} | ${cells.join(" | ")} |`);
+        }
+        lines.push("");
+      }
+    }
+  }
+
+  // ── 六、文本关键词分析 ──
   const textData = data.text_analysis || {};
   if (Object.keys(textData).length > 0) {
-    lines.push("## 五、开放题文本分析");
+    lines.push(`## ${crossData.length > 0 ? "六" : "五"}、开放题文本分析`);
     lines.push("");
     for (const [key, ta] of Object.entries(textData)) {
       if (!ta?.top_keywords?.length) continue;
       lines.push(`### ${ta.column || key}`);
       lines.push(`*回答: ${ta.total_answers} 份 · 均长: ${ta.avg_answer_length} 字 · 独立词: ${ta.unique_words}*`);
+      lines.push("");
+
+      // 情感分析
+      if (ta.sentiment) {
+        lines.push("**情感分布**");
+        lines.push("");
+        lines.push(`| 类型 | 数量 | 占比 |`);
+        lines.push(`|------|------|------|`);
+        for (const d of ta.sentiment.distribution) {
+          lines.push(`| ${d.label} | ${d.count} | ${d.percentage}% |`);
+        }
+        lines.push(`| **平均情感得分** | — | **${ta.sentiment.avg_score}** |`);
+        lines.push("");
+      }
+
+      // 长度分布
+      if (ta.length_distribution) {
+        lines.push("**回答长度分布**");
+        lines.push("");
+        lines.push(`| 长度区间 | 数量 | 占比 |`);
+        lines.push(`|----------|------|------|`);
+        for (const d of ta.length_distribution.distribution) {
+          lines.push(`| ${d.label} | ${d.count} | ${d.percentage}% |`);
+        }
+        lines.push("");
+      }
+
+      // 关键词
+      lines.push("**高频关键词**");
       lines.push("");
       const top15 = ta.top_keywords.slice(0, 15);
       lines.push("| 排名 | 关键词 | 频次 |");
