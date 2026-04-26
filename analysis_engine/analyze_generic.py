@@ -1258,6 +1258,8 @@ def main():
         "genai_usage": usages,
         "likert_scales": likert_scales,
         "text_analysis": text_analysis_results,
+        "has_likert_scales": len(likert_scales) > 0,
+        "has_text_fields": len(text_analysis_results) > 0,
     }
 
     # === 交叉分析（LLM-guided，仅模式2/3启用）===

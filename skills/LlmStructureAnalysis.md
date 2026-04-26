@@ -1,5 +1,7 @@
 ---
 name: LlmStructureAnalysis
+displayName: "识别问卷结构"
+tags: [core, llm]
 description: >
   使用 DeepSeek LLM 对问卷列结构进行语义分类。
   识别每列的题型（人口学/单选/多选/量表/文本/跳过），

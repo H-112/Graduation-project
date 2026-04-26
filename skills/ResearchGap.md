@@ -1,11 +1,14 @@
 ---
 name: ResearchGap
+displayName: "研究缺口分析"
+tags: [insight, extension, meta]
 description: >
   基于全部分析结果，识别研究未覆盖的维度、方法局限和理论盲区。
   生成未来研究方向建议，体现系统的元认知能力。
 version: "1.0.0"
 applicableModes: [deep_research]
 dependencies: [DeepResearch]
+when: "$context.total_records >= 30"
 mcpTools:
   - server: insight-server
     tool: analyze_research_gaps

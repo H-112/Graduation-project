@@ -67,6 +67,24 @@ export class SkillRegistry {
     return Array.from(this.skills.values());
   }
 
+  /** 按标签过滤 Skill */
+  getByTag(tag: string): SkillDefinition[] {
+    return Array.from(this.skills.values()).filter((s) =>
+      s.tags.includes(tag)
+    );
+  }
+
+  /** 获取所有唯一标签 */
+  getTags(): string[] {
+    const set = new Set<string>();
+    for (const s of this.skills.values()) {
+      for (const t of s.tags) {
+        set.add(t);
+      }
+    }
+    return Array.from(set).sort();
+  }
+
   /** 获取 DAG 节点列表（供拓扑排序用） */
   getDagNodes(mode: AnalysisMode): Array<{
     name: string;
@@ -76,6 +94,86 @@ export class SkillRegistry {
       name: s.name,
       dependencies: s.dependencies,
     }));
+  }
+
+  /**
+   * 获取指定模式的 Skill DAG 层级分组
+   * 同层 Skill 之间无依赖，可并行执行
+   */
+  getLevels(mode: AnalysisMode): import("./types").SkillLevels {
+    const skills = this.getApplicableSkills(mode);
+    const inDegree = new Map<string, number>();
+    const adjacency = new Map<string, string[]>();
+    const skillMap = new Map<string, SkillDefinition>();
+
+    for (const s of skills) {
+      skillMap.set(s.name, s);
+      if (!inDegree.has(s.name)) {
+        inDegree.set(s.name, 0);
+      }
+      if (!adjacency.has(s.name)) {
+        adjacency.set(s.name, []);
+      }
+
+      for (const dep of s.dependencies) {
+        if (!inDegree.has(dep)) {
+          inDegree.set(dep, 0);
+        }
+        if (!adjacency.has(dep)) {
+          adjacency.set(dep, []);
+        }
+        adjacency.get(dep)!.push(s.name);
+        inDegree.set(s.name, (inDegree.get(s.name) || 0) + 1);
+      }
+    }
+
+    const levels: import("./types").SkillLevels = [];
+    let currentLevel: string[] = [];
+
+    for (const [name, degree] of inDegree) {
+      if (degree === 0 && skillMap.has(name)) {
+        currentLevel.push(name);
+      }
+    }
+
+    while (currentLevel.length > 0) {
+      const levelSkills = currentLevel
+        .map((name) => skillMap.get(name)!)
+        .filter(Boolean)
+        .map((s) => ({
+          name: s.name,
+          displayName: s.displayName,
+          description: s.description,
+        }));
+      levels.push(levelSkills);
+
+      const nextLevel: string[] = [];
+      for (const name of currentLevel) {
+        for (const neighbor of adjacency.get(name) || []) {
+          const newDegree = (inDegree.get(neighbor) || 1) - 1;
+          inDegree.set(neighbor, newDegree);
+          if (newDegree === 0 && skillMap.has(neighbor)) {
+            nextLevel.push(neighbor);
+          }
+        }
+      }
+      currentLevel = nextLevel;
+    }
+
+    // 将未排序的 Skill 追加到最后一个层级（兜底）
+    const seen = new Set(levels.flat().map((s) => s.name));
+    const remaining = skills
+      .filter((s) => !seen.has(s.name))
+      .map((s) => ({
+        name: s.name,
+        displayName: s.displayName,
+        description: s.description,
+      }));
+    if (remaining.length > 0) {
+      levels.push(remaining);
+    }
+
+    return levels;
   }
 
   // ── YAML frontmatter 解析 ──
@@ -99,11 +197,15 @@ export class SkillRegistry {
 
     return {
       name: frontmatter.name,
+      displayName: frontmatter.displayName as string | undefined,
       description: frontmatter.description,
       version: String(frontmatter.version || "1.0.0"),
       applicableModes: (frontmatter.applicableModes as AnalysisMode[]) || [],
       dependencies: (frontmatter.dependencies as string[]) || [],
       mcpTools: (frontmatter.mcpTools as SkillDefinition["mcpTools"]) || [],
+      tags: (frontmatter.tags as string[]) || [],
+      when: frontmatter.when as string | undefined,
+      inputSchema: frontmatter.inputSchema as Record<string, unknown> | undefined,
       body,
     };
   }

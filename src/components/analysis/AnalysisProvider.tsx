@@ -24,6 +24,14 @@ export interface ProgressEntry {
   timestamp: number;
 }
 
+export type SkillLevelStep = {
+  name: string;
+  displayName?: string;
+  description: string;
+};
+
+export type SkillLevels = SkillLevelStep[][];
+
 export interface AnalysisResult {
   id?: string;
   resultUrl: string;
@@ -59,6 +67,7 @@ export interface AnalysisJob {
   status: AnalysisStatus;
   progressLog: ProgressEntry[];
   roundProgress: { current: number; total: number; title: string } | null;
+  skillSteps: SkillLevels | null;
   result: AnalysisResult | null;
   error: string;
   errorDetail: string;
@@ -110,6 +119,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         status: "analyzing",
         progressLog: [],
         roundProgress: null,
+        skillSteps: null,
         result: null,
         error: "",
         errorDetail: "",
@@ -215,6 +225,17 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     mode: AnalysisMode
   ) => {
     switch (event.type) {
+      case "skills": {
+        setActiveJob((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            skillSteps: (event.levels as SkillLevels) || null,
+          };
+        });
+        break;
+      }
+
       case "progress": {
         const msg = event.message as string;
         let roundProgress: AnalysisJob["roundProgress"] = null;

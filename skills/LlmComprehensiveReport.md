@@ -1,5 +1,7 @@
 ---
 name: LlmComprehensiveReport
+displayName: "生成综合报告"
+tags: [llm, report]
 description: >
   汇总和验证 LLM 深度分析结果。
   确保综合洞察报告完整可用，分离逐题分析和综合报告。

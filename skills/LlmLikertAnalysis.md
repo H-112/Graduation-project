@@ -1,5 +1,7 @@
 ---
 name: LlmLikertAnalysis
+displayName: "量表深度解读 (LLM)"
+tags: [llm, insight, likert]
 description: >
   使用 DeepSeek LLM 对模式1的量表（Likert scale）分析结果进行深度解读。
   为每个量表组生成：整体评价、题项解读、关注等级（低/中/高）、改进建议。
@@ -8,6 +10,7 @@ description: >
 version: "1.0.0"
 applicableModes: [ai_insights, deep_research]
 dependencies: [DescriptiveAnalysis]
+when: "$context.has_likert_scales"
 mcpTools:
   - server: llm-gateway-server
     tool: analyze_likert_scales

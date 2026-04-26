@@ -95,6 +95,10 @@ export class AnalysisOrchestrator {
           emitter.progress(`分析模式: ${mode}`, "init");
           emitter.progress(`文件: ${filePath}`, "init");
 
+          // 推送动态 Skill 层级，供前端步骤条渲染
+          const levels = this.registry.getLevels(mode);
+          emitter.skills(levels);
+
           // 创建执行器并运行
           const executor = new PipelineExecutor(
             this.registry,

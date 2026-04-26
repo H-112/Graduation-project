@@ -1,5 +1,7 @@
 ---
 name: LlmTextInsight
+displayName: "文本洞察分析 (LLM)"
+tags: [llm, insight, text]
 description: >
   使用 DeepSeek LLM 对模式1的文本分析结果进行深度洞察。
   为每道开放题生成：核心主题提炼、情感倾向分析、
@@ -8,6 +10,7 @@ description: >
 version: "1.0.0"
 applicableModes: [ai_insights, deep_research]
 dependencies: [DescriptiveAnalysis]
+when: "$context.has_text_fields"
 mcpTools:
   - server: llm-gateway-server
     tool: run_llm_analysis

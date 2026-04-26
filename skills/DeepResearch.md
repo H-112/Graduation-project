@@ -1,5 +1,7 @@
 ---
 name: DeepResearch
+displayName: "深度研究探索"
+tags: [deep_research, agent]
 description: >
   自主 Agent 探索循环（模式3 预留）。
   基于模式1+2的全部发现，提出追问假设，迭代调用 MCP 工具验证，

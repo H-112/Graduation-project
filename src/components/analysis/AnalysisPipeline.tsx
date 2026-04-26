@@ -17,7 +17,7 @@ import {
   GitBranch,
   ShieldAlert,
 } from "lucide-react";
-import type { AnalysisMode, ProgressEntry } from "@/components/analysis/AnalysisProvider";
+import type { AnalysisMode, ProgressEntry, SkillLevels } from "@/components/analysis/AnalysisProvider";
 import { InlineMarkdown } from "@/components/MarkdownRenderer";
 
 interface PipelineStepDef {
@@ -37,6 +37,52 @@ type StepItem = PipelineStepDef | ParallelGroupDef;
 
 const isParallelGroup = (item: StepItem): item is ParallelGroupDef =>
   "children" in item;
+
+/** Skill name → Icon 映射（用于动态披露） */
+const SKILL_ICONS: Record<string, React.ReactNode> = {
+  FileLoading: <FileSpreadsheet className="w-4 h-4" />,
+  LlmStructureAnalysis: <LayoutList className="w-4 h-4" />,
+  DescriptiveAnalysis: <BarChart3 className="w-4 h-4" />,
+  LlmLikertAnalysis: <TrendingUp className="w-4 h-4" />,
+  LlmTextInsight: <Sparkles className="w-4 h-4" />,
+  LlmComprehensiveReport: <BookOpen className="w-4 h-4" />,
+  DeepResearch: <Search className="w-4 h-4" />,
+  ActionableInsight: <Target className="w-3.5 h-3.5" />,
+  CausalInferenceHint: <GitBranch className="w-3.5 h-3.5" />,
+  ResearchGap: <Search className="w-3.5 h-3.5" />,
+  SampleBiasAssessment: <ShieldAlert className="w-3.5 h-3.5" />,
+  TheoryMapping: <Lightbulb className="w-3.5 h-3.5" />,
+  NlpKeywordExtraction: <Sparkles className="w-4 h-4" />,
+};
+
+/** 将后端推送的 SkillLevels 转换为前端 StepItem[] */
+function buildDynamicSteps(levels: SkillLevels): StepItem[] {
+  const items: StepItem[] = [];
+  for (let i = 0; i < levels.length; i++) {
+    const level = levels[i];
+    if (level.length === 1) {
+      const s = level[0];
+      items.push({
+        id: s.name,
+        label: s.displayName || s.name,
+        icon: SKILL_ICONS[s.name] || <Circle className="w-4 h-4" />,
+      });
+    } else {
+      // 并行组：使用同层第一个 skill 的 displayName 共性或通用标签
+      items.push({
+        id: `Parallel_${i}`,
+        label: "并行任务组",
+        icon: <Lightbulb className="w-4 h-4" />,
+        children: level.map((s) => ({
+          id: s.name,
+          label: s.displayName || s.name,
+          icon: SKILL_ICONS[s.name] || <Circle className="w-3.5 h-3.5" />,
+        })),
+      });
+    }
+  }
+  return items;
+}
 
 const STEPS: Record<AnalysisMode, StepItem[]> = {
   quick_overview: [
@@ -165,16 +211,18 @@ function ChildStatusIcon({ status }: { status: StepStatus }) {
 
 export function AnalysisPipeline({
   mode,
+  steps: dynamicSteps,
   logs,
   isAnalyzing,
   roundProgress,
 }: {
   mode: AnalysisMode;
+  steps?: SkillLevels;
   logs: ProgressEntry[];
   isAnalyzing: boolean;
   roundProgress?: { current: number; total: number; title: string } | null;
 }) {
-  const steps = STEPS[mode] || [];
+  const steps = dynamicSteps ? buildDynamicSteps(dynamicSteps) : (STEPS[mode] || []);
 
   // Compute status for each step
   const stepStates = steps.map((step) => {

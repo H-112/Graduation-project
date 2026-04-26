@@ -327,6 +327,7 @@ export default function UploadPage() {
           {(isAnalyzing || activeJob!.progressLog.length > 0) && (
             <AnalysisPipeline
               mode={activeJob!.mode}
+              steps={activeJob!.skillSteps || undefined}
               logs={activeJob!.progressLog}
               isAnalyzing={isAnalyzing}
               roundProgress={activeJob!.roundProgress}

@@ -1,11 +1,14 @@
 ---
 name: ActionableInsight
+displayName: "可操作建议"
+tags: [insight, extension, action]
 description: >
   将深度研究发现转化为具体、可操作的干预/改进建议。
   按优先级和场景分类，每条建议追溯关联的数据证据。
 version: "1.0.0"
 applicableModes: [deep_research]
 dependencies: [DeepResearch]
+when: "$context.total_records >= 30"
 mcpTools:
   - server: insight-server
     tool: generate_actionable_insights

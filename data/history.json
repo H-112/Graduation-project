@@ -1,5 +1,1362 @@
 [
   {
+    "id": "f7b0f8ba3505",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/abb1410ba6cc.csv",
+    "resultUrl": "/data/results/abb1410ba6cc_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "abb1410ba6cc_comprehensive.md"
+    ],
+    "likertReports": [],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 93887,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 11244,
+      "completion_tokens": 7395,
+      "total_tokens": 18639
+    },
+    "timestamp": "2026-04-26T09:14:36.597Z"
+  },
+  {
+    "id": "830d27684634",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/4463cbd24d13.csv",
+    "resultUrl": "/data/results/4463cbd24d13_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "4463cbd24d13_comprehensive.md"
+    ],
+    "likertReports": [],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 128011,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 10855,
+      "completion_tokens": 7613,
+      "total_tokens": 18468
+    },
+    "timestamp": "2026-04-26T08:59:49.826Z"
+  },
+  {
+    "id": "af0829a36d82",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/eb8f39ba4a72.csv",
+    "resultUrl": "/data/results/eb8f39ba4a72_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "eb8f39ba4a72_comprehensive.md"
+    ],
+    "likertReports": [],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 133276,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 10508,
+      "completion_tokens": 7927,
+      "total_tokens": 18435
+    },
+    "timestamp": "2026-04-26T08:48:55.100Z"
+  },
+  {
+    "id": "3361dfc6d8f7",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/ec2606491049.csv",
+    "resultUrl": "/data/results/ec2606491049_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "ec2606491049_comprehensive.md"
+    ],
+    "likertReports": [],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 138420,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 10699,
+      "completion_tokens": 8327,
+      "total_tokens": 19026
+    },
+    "timestamp": "2026-04-26T08:38:09.253Z"
+  },
+  {
+    "id": "707db73e94ec",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/4fb46a2625a1.csv",
+    "resultUrl": "/data/results/4fb46a2625a1_analysis.json",
+    "llmReports": [
+      "4fb46a2625a1_comprehensive.md"
+    ],
+    "likertReports": [
+      "4fb46a2625a1_likert_analysis.json",
+      "4fb46a2625a1_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 105514,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 12298,
+      "completion_tokens": 7853,
+      "total_tokens": 20151
+    },
+    "timestamp": "2026-04-26T08:22:15.842Z"
+  },
+  {
+    "id": "2a9553fac4f5",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/62ccc990b2f7.csv",
+    "resultUrl": "/data/results/62ccc990b2f7_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 154,
+    "apiCalls": 3,
+    "timestamp": "2026-04-26T07:44:01.815Z"
+  },
+  {
+    "id": "5d23b2dff0b6",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/c64c31cc414e.csv",
+    "resultUrl": "/data/results/c64c31cc414e_analysis.json",
+    "llmReports": [
+      "c64c31cc414e_comprehensive.md"
+    ],
+    "likertReports": [
+      "c64c31cc414e_likert_analysis.json",
+      "c64c31cc414e_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 133686,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 14296,
+      "completion_tokens": 9704,
+      "total_tokens": 24000
+    },
+    "timestamp": "2026-04-26T07:12:31.881Z"
+  },
+  {
+    "id": "70dfae567874",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/3154b4aa3be1.csv",
+    "resultUrl": "/data/results/3154b4aa3be1_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 126,
+    "apiCalls": 3,
+    "timestamp": "2026-04-26T07:09:35.258Z"
+  },
+  {
+    "id": "615fe3668712",
+    "type": "upload",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/615fe3668712.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T07:08:35.541Z"
+  },
+  {
+    "id": "2487ef58bc0b",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/48b08c303c49.csv",
+    "resultUrl": "/data/results/48b08c303c49_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 83690,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 10908,
+      "completion_tokens": 6580,
+      "total_tokens": 17488
+    },
+    "timestamp": "2026-04-26T06:57:59.657Z"
+  },
+  {
+    "id": "f8b8d81f992b",
+    "type": "upload",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/f8b8d81f992b.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T06:56:25.423Z"
+  },
+  {
+    "id": "ad1611c127b9",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/c56432c9d60a.csv",
+    "resultUrl": "/data/results/c56432c9d60a_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 78870,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 10908,
+      "completion_tokens": 5885,
+      "total_tokens": 16793
+    },
+    "timestamp": "2026-04-26T06:51:08.805Z"
+  },
+  {
+    "id": "6405f7a93887",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/499ac7751278.csv",
+    "resultUrl": "/data/results/499ac7751278_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "499ac7751278_comprehensive.md"
+    ],
+    "likertReports": [
+      "499ac7751278_likert_analysis.json",
+      "499ac7751278_likert_analysis.md"
+    ],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 248633,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 30411,
+      "completion_tokens": 16744,
+      "total_tokens": 47155
+    },
+    "timestamp": "2026-04-26T06:36:32.559Z"
+  },
+  {
+    "id": "5dd237c261a2",
+    "type": "upload",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/5dd237c261a2.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T06:32:16.046Z"
+  },
+  {
+    "id": "b72eaa920107",
+    "type": "analysis",
+    "datasetName": "23072848_202604241744528431.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/44b12255332e.csv",
+    "mode": "ai_insights",
+    "status": "failed",
+    "error": "Invalid state: Controller is already closed",
+    "duration_ms": 75979,
+    "apiCalls": 2,
+    "tokenUsage": {
+      "prompt_tokens": 10820,
+      "completion_tokens": 5829,
+      "total_tokens": 16649
+    },
+    "timestamp": "2026-04-26T03:52:28.964Z"
+  },
+  {
+    "id": "bb62c76d502e",
+    "type": "analysis",
+    "datasetName": "23072874_202604241746012871.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/210703be600c.csv",
+    "resultUrl": "/data/results/210703be600c_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "210703be600c_comprehensive.md"
+    ],
+    "likertReports": [
+      "210703be600c_likert_analysis.json",
+      "210703be600c_likert_analysis.md"
+    ],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 530,
+      "fields": 187,
+      "demographics": 8,
+      "usageItems": 10,
+      "likertGroups": 3,
+      "textFields": 0
+    },
+    "duration_ms": 247565,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 30284,
+      "completion_tokens": 17048,
+      "total_tokens": 47332
+    },
+    "timestamp": "2026-04-26T03:56:33.418Z"
+  },
+  {
+    "id": "5cdff39d6a03",
+    "type": "upload",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/5cdff39d6a03.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T03:52:18.031Z"
+  },
+  {
+    "id": "d6c0fdc87c55",
+    "type": "upload",
+    "datasetName": "23072848_202604241744528431.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/d6c0fdc87c55.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T03:52:12.115Z"
+  },
+  {
+    "id": "7d5c6f4eb305",
+    "type": "analysis",
+    "datasetName": "23072848_202604241744528431.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/44b12255332e.csv",
+    "resultUrl": "/data/results/44b12255332e_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 694,
+      "fields": 149,
+      "demographics": 8,
+      "usageItems": 9,
+      "likertGroups": 3,
+      "textFields": 1
+    },
+    "duration_ms": 76977,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 10820,
+      "completion_tokens": 5816,
+      "total_tokens": 16636
+    },
+    "timestamp": "2026-04-26T03:50:18.514Z"
+  },
+  {
+    "id": "1b23e26db1df",
+    "type": "analysis",
+    "datasetName": "23072848_202604241744528431.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/476310ce7166.csv",
+    "resultUrl": "/data/results/476310ce7166_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "476310ce7166_llm_01.md",
+      "476310ce7166_llm_02.md",
+      "476310ce7166_comprehensive.md"
+    ],
+    "likertReports": [
+      "476310ce7166_likert_analysis.json",
+      "476310ce7166_likert_analysis.md"
+    ],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 694,
+      "fields": 149,
+      "demographics": 8,
+      "usageItems": 9,
+      "likertGroups": 3,
+      "textFields": 2
+    },
+    "duration_ms": 258617,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 32318,
+      "completion_tokens": 18057,
+      "total_tokens": 50375
+    },
+    "timestamp": "2026-04-26T03:41:10.032Z"
+  },
+  {
+    "id": "d997bdd1e629",
+    "type": "upload",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/d997bdd1e629.csv",
+    "status": "pending",
+    "timestamp": "2026-04-26T03:36:41.265Z"
+  },
+  {
+    "id": "bdcbed1095ef",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/f0c53a2d9856.xlsx",
+    "resultUrl": "/data/results/f0c53a2d9856_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "f0c53a2d9856_llm_01.md",
+      "f0c53a2d9856_llm_02.md",
+      "f0c53a2d9856_llm_03.md",
+      "f0c53a2d9856_comprehensive.md"
+    ],
+    "likertReports": [
+      "f0c53a2d9856_likert_analysis.json",
+      "f0c53a2d9856_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 337229,
+    "apiCalls": 7,
+    "tokenUsage": {
+      "prompt_tokens": 24206,
+      "completion_tokens": 15152,
+      "total_tokens": 39358
+    },
+    "timestamp": "2026-04-26T03:33:49.235Z"
+  },
+  {
+    "id": "975a3cee799a",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/2c3697c27666.xlsx",
+    "resultUrl": "/data/results/2c3697c27666_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 21508,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 2847,
+      "completion_tokens": 1644,
+      "total_tokens": 4491
+    },
+    "timestamp": "2026-04-26T03:26:23.387Z"
+  },
+  {
+    "id": "931f1d6d83f6",
+    "type": "analysis",
+    "datasetName": "265987486_按文本_调查：生成式人工智能对大学生学习方式的影响_915_915.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/c82d132ce2b3.xlsx",
+    "resultUrl": "/data/results/c82d132ce2b3_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "c82d132ce2b3_llm_01.md",
+      "c82d132ce2b3_comprehensive.md"
+    ],
+    "likertReports": [
+      "c82d132ce2b3_likert_analysis.json",
+      "c82d132ce2b3_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 915,
+      "fields": 91,
+      "demographics": 7,
+      "usageItems": 12,
+      "likertGroups": 5,
+      "textFields": 1
+    },
+    "duration_ms": 316801,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 39745,
+      "completion_tokens": 22969,
+      "total_tokens": 62714
+    },
+    "timestamp": "2026-04-26T02:50:58.711Z"
+  },
+  {
+    "id": "53df3638d602",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/57a66a71b9a0.xlsx",
+    "resultUrl": "/data/results/57a66a71b9a0_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "57a66a71b9a0_llm_01.md",
+      "57a66a71b9a0_llm_02.md",
+      "57a66a71b9a0_llm_03.md",
+      "57a66a71b9a0_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 321852,
+    "apiCalls": 11,
+    "tokenUsage": {
+      "prompt_tokens": 30114,
+      "completion_tokens": 15751,
+      "total_tokens": 45865
+    },
+    "timestamp": "2026-04-26T02:37:12.698Z"
+  },
+  {
+    "id": "6b2e486ac514",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/a1bf94d7e5ad.xlsx",
+    "resultUrl": "/data/results/a1bf94d7e5ad_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "a1bf94d7e5ad_llm_01.md",
+      "a1bf94d7e5ad_comprehensive.md"
+    ],
+    "likertReports": [
+      "a1bf94d7e5ad_likert_analysis.json",
+      "a1bf94d7e5ad_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 166645,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 19591,
+      "completion_tokens": 10997,
+      "total_tokens": 30588
+    },
+    "timestamp": "2026-04-26T01:44:12.356Z"
+  },
+  {
+    "id": "a502f5d0066b",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/341a5352d5a5.xlsx",
+    "resultUrl": "/data/results/341a5352d5a5_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "341a5352d5a5_llm_01.md",
+      "341a5352d5a5_llm_02.md",
+      "341a5352d5a5_llm_03.md",
+      "341a5352d5a5_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 336299,
+    "apiCalls": 11,
+    "tokenUsage": {
+      "prompt_tokens": 30231,
+      "completion_tokens": 15615,
+      "total_tokens": 45846
+    },
+    "timestamp": "2026-04-26T01:34:27.480Z"
+  },
+  {
+    "id": "e5fdeda9ec4e",
+    "type": "analysis",
+    "datasetName": "295603991_按文本_生成式人工智能对大学生影响的调查_3025_2246.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/b6df4e4c9ccb.xlsx",
+    "resultUrl": "/data/results/b6df4e4c9ccb_analysis.json",
+    "llmReports": [
+      "b6df4e4c9ccb_llm_01.md",
+      "b6df4e4c9ccb_llm_02.md",
+      "b6df4e4c9ccb_llm_03.md",
+      "b6df4e4c9ccb_comprehensive.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 2246,
+      "fields": 75,
+      "demographics": 6,
+      "usageItems": 11,
+      "likertGroups": 5,
+      "textFields": 3
+    },
+    "duration_ms": 159501,
+    "apiCalls": 5,
+    "tokenUsage": {
+      "prompt_tokens": 10151,
+      "completion_tokens": 7552,
+      "total_tokens": 17703
+    },
+    "timestamp": "2026-04-26T01:22:01.381Z"
+  },
+  {
+    "id": "202e376ca857",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/a279f6415ccb.xlsx",
+    "resultUrl": "/data/results/a279f6415ccb_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "a279f6415ccb_llm_01.md",
+      "a279f6415ccb_llm_02.md",
+      "a279f6415ccb_comprehensive.md"
+    ],
+    "likertReports": [
+      "a279f6415ccb_likert_analysis.json",
+      "a279f6415ccb_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 187069,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 19826,
+      "completion_tokens": 12999,
+      "total_tokens": 32825
+    },
+    "timestamp": "2026-04-26T00:12:00.849Z"
+  },
+  {
+    "id": "522372dd2af2",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/9c917d476bfa.xlsx",
+    "resultUrl": "/data/results/9c917d476bfa_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "9c917d476bfa_llm_01.md",
+      "9c917d476bfa_comprehensive.md"
+    ],
+    "likertReports": [
+      "9c917d476bfa_likert_analysis.json",
+      "9c917d476bfa_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 197922,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 20377,
+      "completion_tokens": 11278,
+      "total_tokens": 31655
+    },
+    "timestamp": "2026-04-25T16:02:05.588Z"
+  },
+  {
+    "id": "69ee0a31958e",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/16e2de0081d9.xlsx",
+    "resultUrl": "/data/results/16e2de0081d9_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "16e2de0081d9_llm_01.md",
+      "16e2de0081d9_comprehensive.md"
+    ],
+    "likertReports": [
+      "16e2de0081d9_likert_analysis.json",
+      "16e2de0081d9_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 124478,
+    "apiCalls": 7,
+    "tokenUsage": {
+      "prompt_tokens": 10407,
+      "completion_tokens": 6914,
+      "total_tokens": 17321
+    },
+    "timestamp": "2026-04-25T15:24:31.488Z"
+  },
+  {
+    "id": "d23613043592",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/340b69f7f3c6.xlsx",
+    "resultUrl": "/data/results/340b69f7f3c6_analysis.json",
+    "llmReports": [
+      "340b69f7f3c6_llm_01.md",
+      "340b69f7f3c6_comprehensive.md"
+    ],
+    "likertReports": [
+      "340b69f7f3c6_likert_analysis.json",
+      "340b69f7f3c6_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 80906,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4436,
+      "total_tokens": 10487
+    },
+    "timestamp": "2026-04-25T14:48:54.292Z"
+  },
+  {
+    "id": "bba036a9c21f",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/4e0e3e6c299e.csv",
+    "resultUrl": "/data/results/4e0e3e6c299e_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "4e0e3e6c299e_comprehensive.md"
+    ],
+    "likertReports": [],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 84636,
+    "apiCalls": 7,
+    "tokenUsage": {
+      "prompt_tokens": 5111,
+      "completion_tokens": 4124,
+      "total_tokens": 9235
+    },
+    "timestamp": "2026-04-25T14:23:47.671Z"
+  },
+  {
+    "id": "532be803615e",
+    "type": "analysis",
+    "datasetName": "25162701_202604242312269507.csv",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/367ce7b1ae90.csv",
+    "resultUrl": "/data/results/367ce7b1ae90_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "367ce7b1ae90_comprehensive.md"
+    ],
+    "likertReports": [],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 39,
+      "fields": 25,
+      "demographics": 0,
+      "usageItems": 10,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 82980,
+    "apiCalls": 7,
+    "tokenUsage": {
+      "prompt_tokens": 4887,
+      "completion_tokens": 4258,
+      "total_tokens": 9145
+    },
+    "timestamp": "2026-04-25T14:17:00.769Z"
+  },
+  {
+    "id": "3cf550cb2a46",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/ba3ce4e385af.xlsx",
+    "resultUrl": "/data/results/ba3ce4e385af_analysis.json",
+    "llmReports": [
+      "ba3ce4e385af_llm_01.md",
+      "ba3ce4e385af_comprehensive.md"
+    ],
+    "likertReports": [
+      "ba3ce4e385af_likert_analysis.json",
+      "ba3ce4e385af_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 79358,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4488,
+      "total_tokens": 10539
+    },
+    "timestamp": "2026-04-25T14:08:22.384Z"
+  },
+  {
+    "id": "6a60ec72a46e",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/99e48ccf07f9.xlsx",
+    "resultUrl": "/data/results/99e48ccf07f9_analysis.json",
+    "llmReports": [
+      "99e48ccf07f9_llm_01.md",
+      "99e48ccf07f9_comprehensive.md"
+    ],
+    "likertReports": [
+      "99e48ccf07f9_likert_analysis.json",
+      "99e48ccf07f9_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 86600,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4722,
+      "total_tokens": 10773
+    },
+    "timestamp": "2026-04-25T13:57:18.917Z"
+  },
+  {
+    "id": "91285a281b3a",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/f6102d7c4378.xlsx",
+    "resultUrl": "/data/results/f6102d7c4378_analysis.json",
+    "llmReports": [
+      "f6102d7c4378_llm_01.md",
+      "f6102d7c4378_comprehensive.md"
+    ],
+    "likertReports": [
+      "f6102d7c4378_likert_analysis.json",
+      "f6102d7c4378_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 80013,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4781,
+      "total_tokens": 10832
+    },
+    "timestamp": "2026-04-25T13:48:16.002Z"
+  },
+  {
+    "id": "c52d0f6a59b8",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/b9c1d7cb497e.xlsx",
+    "resultUrl": "/data/results/b9c1d7cb497e_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 20037,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 2768,
+      "completion_tokens": 1354,
+      "total_tokens": 4122
+    },
+    "timestamp": "2026-04-25T13:33:56.046Z"
+  },
+  {
+    "id": "9ea1c6c06f4b",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/44bb8622f001.xlsx",
+    "resultUrl": "/data/results/44bb8622f001_analysis.json",
+    "llmReports": [
+      "44bb8622f001_llm_01.md",
+      "44bb8622f001_llm_02.md",
+      "44bb8622f001_comprehensive.md"
+    ],
+    "likertReports": [
+      "44bb8622f001_likert_analysis.json",
+      "44bb8622f001_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 86395,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6415,
+      "completion_tokens": 5417,
+      "total_tokens": 11832
+    },
+    "timestamp": "2026-04-25T13:15:57.005Z"
+  },
+  {
+    "id": "8eca73c4c22e",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/199130b34759.xlsx",
+    "mode": "ai_insights",
+    "status": "failed",
+    "error": "核心统计分析未成功完成",
+    "duration_ms": 32834,
+    "apiCalls": 2,
+    "tokenUsage": {
+      "prompt_tokens": 2847,
+      "completion_tokens": 1401,
+      "total_tokens": 4248
+    },
+    "timestamp": "2026-04-25T13:10:59.998Z"
+  },
+  {
+    "id": "47f73f2071e2",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/05bbcf6d96de.xlsx",
+    "resultUrl": "/data/results/05bbcf6d96de_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 19275,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 2768,
+      "completion_tokens": 1339,
+      "total_tokens": 4107
+    },
+    "timestamp": "2026-04-25T13:05:01.985Z"
+  },
+  {
+    "id": "8cbfb893221b",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/23f01ecc101f.xlsx",
+    "mode": "ai_insights",
+    "status": "failed",
+    "error": "核心统计分析未成功完成",
+    "duration_ms": 18313,
+    "apiCalls": 2,
+    "tokenUsage": {
+      "prompt_tokens": 2768,
+      "completion_tokens": 1328,
+      "total_tokens": 4096
+    },
+    "timestamp": "2026-04-25T13:03:42.967Z"
+  },
+  {
+    "id": "faa378a91685",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/3761370d955f.xlsx",
+    "resultUrl": "/data/results/3761370d955f_analysis.json",
+    "llmReports": [
+      "3761370d955f_llm_01.md",
+      "3761370d955f_llm_02.md",
+      "3761370d955f_comprehensive.md"
+    ],
+    "likertReports": [
+      "3761370d955f_likert_analysis.json",
+      "3761370d955f_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 79799,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6415,
+      "completion_tokens": 5814,
+      "total_tokens": 12229
+    },
+    "timestamp": "2026-04-25T12:49:35.030Z"
+  },
+  {
+    "id": "5bad4a697913",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/3c6558d98ffb.xlsx",
+    "resultUrl": "/data/results/3c6558d98ffb_analysis.json",
+    "llmReports": [
+      "3c6558d98ffb_llm_01.md",
+      "3c6558d98ffb_comprehensive.md"
+    ],
+    "likertReports": [
+      "3c6558d98ffb_likert_analysis.json",
+      "3c6558d98ffb_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 67470,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4980,
+      "total_tokens": 11031
+    },
+    "timestamp": "2026-04-25T12:36:49.110Z"
+  },
+  {
+    "id": "319a1ca637ea",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/3b65ae31e652.xlsx",
+    "resultUrl": "/data/results/3b65ae31e652_analysis.json",
+    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
+    "llmReports": [
+      "3b65ae31e652_llm_01.md",
+      "3b65ae31e652_comprehensive.md"
+    ],
+    "likertReports": [
+      "3b65ae31e652_likert_analysis.json",
+      "3b65ae31e652_likert_analysis.md"
+    ],
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 106638,
+    "apiCalls": 7,
+    "tokenUsage": {
+      "prompt_tokens": 10261,
+      "completion_tokens": 6895,
+      "total_tokens": 17156
+    },
+    "timestamp": "2026-04-25T12:31:56.902Z"
+  },
+  {
+    "id": "7cb5bcb3aa8e",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/644ece4d2950.xlsx",
+    "resultUrl": "/data/results/644ece4d2950_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 17688,
+    "apiCalls": 4,
+    "tokenUsage": {
+      "prompt_tokens": 2768,
+      "completion_tokens": 1333,
+      "total_tokens": 4101
+    },
+    "timestamp": "2026-04-25T12:04:51.220Z"
+  },
+  {
+    "id": "958cecff1d63",
+    "type": "analysis",
+    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/21129ba2aa22.xlsx",
+    "resultUrl": "/data/results/21129ba2aa22_analysis.json",
+    "llmReports": [
+      "21129ba2aa22_llm_01.md",
+      "21129ba2aa22_comprehensive.md"
+    ],
+    "likertReports": [
+      "21129ba2aa22_likert_analysis.json",
+      "21129ba2aa22_likert_analysis.md"
+    ],
+    "mode": "ai_insights",
+    "status": "completed",
+    "summary": {
+      "records": 79,
+      "fields": 31,
+      "demographics": 4,
+      "usageItems": 10,
+      "likertGroups": 1,
+      "textFields": 1
+    },
+    "duration_ms": 61639,
+    "apiCalls": 6,
+    "tokenUsage": {
+      "prompt_tokens": 6051,
+      "completion_tokens": 4643,
+      "total_tokens": 10694
+    },
+    "timestamp": "2026-04-25T12:03:50.119Z"
+  },
+  {
+    "id": "d7da70ea4702",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/7b4346761891.xlsx",
+    "mode": "ai_insights",
+    "status": "failed",
+    "error": "核心统计分析未成功完成",
+    "duration_ms": 21046,
+    "apiCalls": 1,
+    "timestamp": "2026-04-25T12:00:02.778Z"
+  },
+  {
+    "id": "bb3b71238e46",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/09513197d133.xlsx",
+    "mode": "quick_overview",
+    "status": "failed",
+    "error": "核心统计分析未成功完成",
+    "duration_ms": 22499,
+    "apiCalls": 1,
+    "timestamp": "2026-04-25T10:18:35.885Z"
+  },
+  {
+    "id": "9fd47d828cc3",
+    "type": "analysis",
+    "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/72582f618adc.xlsx",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "demographics": 0,
+      "usageItems": 0,
+      "likertGroups": 0,
+      "textFields": 0
+    },
+    "duration_ms": 23223,
+    "apiCalls": 1,
+    "timestamp": "2026-04-25T10:17:25.471Z"
+  },
+  {
+    "id": "cf1e2d7a04a0",
+    "type": "analysis",
+    "datasetName": "stdio NLP 集成测试",
+    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/304937068_按文本_智能学习插件需求调查_63_63.xlsx",
+    "resultUrl": "/data/results/304937068_按文本_智能学习插件需求调查_63_63_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 63,
+      "fields": 26,
+      "demographics": 2,
+      "usageItems": 2,
+      "likertGroups": 2,
+      "textFields": 2
+    },
+    "duration_ms": 19858,
+    "apiCalls": 4,
+    "timestamp": "2026-04-25T09:52:06.866Z"
+  },
+  {
     "id": "3a883a886f2e",
     "type": "analysis",
     "datasetName": "304937068_按文本_智能学习插件需求调查_63_63.xlsx",

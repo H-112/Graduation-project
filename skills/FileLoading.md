@@ -1,5 +1,7 @@
 ---
 name: FileLoading
+displayName: "加载数据文件"
+tags: [core, data]
 description: >
   加载并预览上传的 CSV 或 Excel 问卷文件。
   作为分析流水线的起点，提供文件元数据和内容预览。

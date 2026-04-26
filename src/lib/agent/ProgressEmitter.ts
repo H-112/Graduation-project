@@ -4,7 +4,7 @@
 // 与原 trigger route 的 SSE 格式完全兼容
 // ============================================
 
-import type { SseEvent } from "./types";
+import type { SseEvent, SkillLevels } from "./types";
 
 export class ProgressEmitter {
   private encoder = new TextEncoder();
@@ -83,5 +83,12 @@ export class ProgressEmitter {
       message,
       stage: level,
     });
+  }
+
+  skills(levels: SkillLevels): void {
+    this.emit({
+      type: "skills",
+      levels,
+    } as SseEvent);
   }
 }

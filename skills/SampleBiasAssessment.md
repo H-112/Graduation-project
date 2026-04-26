@@ -1,11 +1,14 @@
 ---
 name: SampleBiasAssessment
+displayName: "样本偏差诊断"
+tags: [insight, extension, quality]
 description: >
   诊断问卷样本的各类偏差风险：选择偏差、无应答偏差、覆盖偏差、缺失模式偏差。
   评估偏差对研究结论的潜在影响，提出缓解建议，提升研究的可推广性。
 version: "1.0.0"
 applicableModes: [deep_research]
 dependencies: [DeepResearch]
+when: "$context.total_records >= 30"
 mcpTools:
   - server: insight-server
     tool: assess_sample_bias

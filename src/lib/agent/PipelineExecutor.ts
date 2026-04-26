@@ -101,6 +101,19 @@ export class PipelineExecutor {
       return output;
     }
 
+    // 评估 when 条件
+    if (skill.when && !this._evaluateWhen(skill.when, input)) {
+      const skipMsg = `跳过（条件不满足: ${skill.when}）`;
+      this.emitter.phaseStart(skill.name, skipMsg);
+      const output: SkillOutput = {
+        success: true,
+        data: { skipped: true, reason: skipMsg },
+      };
+      results.push(output);
+      this.emitter.phaseComplete(skill.name);
+      return output;
+    }
+
     // 执行 Skill
     this.emitter.phaseStart(skill.name, "");
 
@@ -453,6 +466,29 @@ export class PipelineExecutor {
     }
 
     return levels;
+  }
+
+  /**
+   * 评估 Skill 的 when 条件表达式
+   * 支持 $context.xxx 和 $input.xxx 模板变量
+   * 失败时默认返回 true（fail-open）
+   */
+  private _evaluateWhen(when: string, input: SkillInput): boolean {
+    const expr = when
+      .replace(/\$context\.(\w+)/g, (_, key) => {
+        const val = this.context.get(key);
+        return JSON.stringify(val);
+      })
+      .replace(/\$input\.(\w+)/g, (_, key) => {
+        const val = (input as unknown as Record<string, unknown>)[key];
+        return JSON.stringify(val);
+      });
+    try {
+      return new Function(`return (${expr})`)() as boolean;
+    } catch {
+      console.warn(`[PipelineExecutor] When expression eval failed: ${when}`);
+      return true;
+    }
   }
 
   /** 将失败 Skill 的所有传递依赖标记为失败 */

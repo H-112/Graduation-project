@@ -1,5 +1,7 @@
 ---
 name: CausalInferenceHint
+displayName: "因果推断提示"
+tags: [insight, extension, causal]
 description: >
   从截面相关数据中发现具有因果研究潜力的关联方向。
   评估因果可能性，指出混淆风险，建议后续验证方法（实验设计、工具变量、纵向追踪等）。
@@ -7,6 +9,7 @@ description: >
 version: "1.0.0"
 applicableModes: [deep_research]
 dependencies: [DeepResearch]
+when: "$context.total_records >= 30"
 mcpTools:
   - server: insight-server
     tool: generate_causal_hints

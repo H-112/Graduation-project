@@ -1,5 +1,7 @@
 ---
 name: DescriptiveAnalysis
+displayName: "运行统计分析"
+tags: [core, stats]
 description: >
   运行完整的模式1统计分析流水线。
   包括：数据清洗、题型自动检测、人口学分布、选择题统计、
