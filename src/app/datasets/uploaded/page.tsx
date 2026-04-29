@@ -281,12 +281,6 @@ function UploadedResultContent() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
-      {/* DEBUG */}
-      {data && (
-        <div className="bg-yellow-100 p-2 mb-2 text-xs text-yellow-800 rounded">
-          DEBUG page: data keys={Object.keys(data).join(', ')} | has genai_usage={'genai_usage' in data} | genai_usage keys={Object.keys(data.genai_usage || {}).length}
-        </div>
-      )}
       {/* Mode 3: 研究报告布局 */}
       {analysisMode === "deep_research" && data ? (
         <ResearchReport
