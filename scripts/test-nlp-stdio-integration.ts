@@ -10,7 +10,7 @@ import { AnalysisOrchestrator } from "../src/lib/agent/AnalysisOrchestrator";
 const TEST_FILE = path.join(
   process.cwd(),
   "data",
-  "304937068_按文本_智能学习插件需求调查_63_63.xlsx"
+  "6.智能学习IDE插件需求调查-63.xlsx"
 );
 
 async function main() {

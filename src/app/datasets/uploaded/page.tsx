@@ -19,6 +19,7 @@ import { ActionableInsightPanel, type ActionableInsightData } from "@/components
 import { ResearchGapPanel, type ResearchGapData } from "@/components/analysis/ResearchGapPanel";
 import { CausalInferencePanel, type CausalInferenceData } from "@/components/analysis/CausalInferencePanel";
 import { SampleBiasPanel, type SampleBiasData } from "@/components/analysis/SampleBiasPanel";
+import { ResearchReport } from "@/components/analysis/ResearchReport";
 import { Loader2, AlertCircle, Printer } from "lucide-react";
 
 interface HistoryRecord {
@@ -33,6 +34,7 @@ interface HistoryRecord {
   causalHintsUrl?: string;
   sampleBiasUrl?: string;
   datasetName?: string;
+  mode?: string;
 }
 
 function ChapterSection({
@@ -91,6 +93,7 @@ function UploadedResultContent() {
   const [biasData, setBiasData] = useState<SampleBiasData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [analysisMode, setAnalysisMode] = useState<string>("quick_overview");
 
   // LLM report contents
   const [llmContents, setLlmContents] = useState<string[]>([]);
@@ -116,6 +119,7 @@ function UploadedResultContent() {
         if (rec.researchGapsUrl) setGapUrl(rec.researchGapsUrl);
         if (rec.causalHintsUrl) setCausalUrl(rec.causalHintsUrl);
         if (rec.sampleBiasUrl) setBiasUrl(rec.sampleBiasUrl);
+        if (rec.mode) setAnalysisMode(rec.mode);
       })
       .catch((e) => {
         if ((e as Error).name === "AbortError") return;
@@ -371,6 +375,22 @@ function UploadedResultContent() {
 
   return (
     <div className="flex gap-8">
+      {/* Mode 3: 研究报告布局 */}
+      {analysisMode === "deep_research" && data ? (
+        <ResearchReport
+          data={data}
+          deepReport={deepReport}
+          inlineTextContents={inlineTextContents}
+          comprehensiveContent={llmContents[llmReports.findIndex(r => r.file.toLowerCase().includes("comprehensive"))] || ""}
+          likertLlmData={likertJson as unknown as import("@/components/analysis/LikertLlmPanel").LikertLlmData | null}
+          theoryData={theoryData}
+          actionableData={actionableData}
+          gapData={gapData}
+          causalData={causalData}
+          biasData={biasData}
+        />
+      ) : (
+        <>
       {/* Main content */}
       <div className="flex-1 min-w-0 space-y-14">
         {/* Header */}
@@ -555,6 +575,8 @@ function UploadedResultContent() {
 
       {/* Table of Contents */}
       <TableOfContents groups={tocGroups} />
+      </>
+      )}
     </div>
   );
 }

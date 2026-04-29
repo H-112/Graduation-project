@@ -2,7 +2,7 @@
 // ============================================
 // 全流程测试模块
 // 测试: 上传 → 分析 → SSE 进度 → 结果验证
-// 测试文件: data/304937068_按文本_智能学习插件需求调查_63_63.xlsx
+// 测试文件: data/6.智能学习IDE插件需求调查-63.xlsx
 // 用法:   npx tsx scripts/test-pipeline.ts [mode]
 //         mode: quick_overview (默认) | ai_insights
 // ============================================
@@ -15,7 +15,7 @@ const BASE_URL = "http://localhost:3000";
 const TEST_FILE = path.join(
   process.cwd(),
   "data",
-  "304937068_按文本_智能学习插件需求调查_63_63.xlsx"
+  "6.智能学习IDE插件需求调查-63.xlsx"
 );
 
 const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
