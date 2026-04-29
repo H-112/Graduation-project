@@ -67,35 +67,6 @@ export class SkillRegistry {
     return Array.from(this.skills.values());
   }
 
-  /** 按标签过滤 Skill */
-  getByTag(tag: string): SkillDefinition[] {
-    return Array.from(this.skills.values()).filter((s) =>
-      s.tags.includes(tag)
-    );
-  }
-
-  /** 获取所有唯一标签 */
-  getTags(): string[] {
-    const set = new Set<string>();
-    for (const s of this.skills.values()) {
-      for (const t of s.tags) {
-        set.add(t);
-      }
-    }
-    return Array.from(set).sort();
-  }
-
-  /** 获取 DAG 节点列表（供拓扑排序用） */
-  getDagNodes(mode: AnalysisMode): Array<{
-    name: string;
-    dependencies: string[];
-  }> {
-    return this.getApplicableSkills(mode).map((s) => ({
-      name: s.name,
-      dependencies: s.dependencies,
-    }));
-  }
-
   /**
    * 获取指定模式的 Skill DAG 层级分组
    * 同层 Skill 之间无依赖，可并行执行
@@ -123,7 +94,7 @@ export class SkillRegistry {
           adjacency.set(dep, []);
         }
         adjacency.get(dep)!.push(s.name);
-        inDegree.set(s.name, (inDegree.get(s.name) || 0) + 1);
+        inDegree.set(s.name, (inDegree.get(s.name) ?? 0) + 1);
       }
     }
 
@@ -150,7 +121,7 @@ export class SkillRegistry {
       const nextLevel: string[] = [];
       for (const name of currentLevel) {
         for (const neighbor of adjacency.get(name) || []) {
-          const newDegree = (inDegree.get(neighbor) || 1) - 1;
+          const newDegree = (inDegree.get(neighbor) ?? 0) - 1;
           inDegree.set(neighbor, newDegree);
           if (newDegree === 0 && skillMap.has(neighbor)) {
             nextLevel.push(neighbor);

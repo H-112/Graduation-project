@@ -109,6 +109,13 @@ def clean_data(headers, rows):
     # 3. 标记低质量行（缺失值超过80%）
     clean_rows = []
     low_quality_examples = []
+    if len(headers) == 0:
+        stats["removed_low_quality"] = len(rows)
+        stats["examples"]["low_quality"] = []
+        stats["removed_skips"] = 0
+        stats["final_count"] = 0
+        stats["retention_rate"] = 0
+        return clean_rows, stats
     for row in rows:
         non_empty_count = sum(1 for h in headers if str(row.get(h, '')).strip())
         missing_ratio = 1 - (non_empty_count / len(headers))

@@ -95,6 +95,9 @@ function UploadedResultContent() {
   // LLM report contents
   const [llmContents, setLlmContents] = useState<string[]>([]);
   const [llmLoading, setLlmLoading] = useState(false);
+  // 内联文本洞察加载状态
+  const [inlineTextLoading, setInlineTextLoading] = useState(false);
+  const [inlineTextContents, setInlineTextContents] = useState<{ label: string; content: string }[]>([]);
 
   // 如果提供了 id，从历史记录获取全部 URL（覆盖 query params）
   useEffect(() => {
@@ -134,6 +137,10 @@ function UploadedResultContent() {
     ? reportsParam.split(",").map((f) => ({ label: getLlmReportLabel(f), file: f }))
     : [];
 
+  // 分离逐题文本洞察（内联到文本分析后面）和综合报告（独立章节）
+  const inlineTextReports = llmReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
+  const comprehensiveReport = llmReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
+
   const likertReports = likertReportsParam
     ? likertReportsParam.split(",").map((f) => ({ label: getLlmReportLabel(f), file: f }))
     : [];
@@ -141,6 +148,8 @@ function UploadedResultContent() {
   const hasJsonData = !!data;
   const hasDeepReport = !!deepReportUrl || !!deepReport;
   const hasLlmReports = llmReports.length > 0;
+  const hasComprehensiveReport = !!comprehensiveReport;
+  const hasInlineTextLlm = inlineTextReports.length > 0;
   const hasLikertLlm = likertReports.length > 0;
   const hasCrossAnalysis = data?.cross_analysis && data.cross_analysis.length > 0;
   const hasDemographics = data?.demographics && Object.keys(data.demographics).length > 0;
@@ -252,6 +261,23 @@ function UploadedResultContent() {
     return () => controller.abort();
   }, [reportsParam]);
 
+  // Load inline text LLM contents (逐题洞察，不含综合报告)
+  useEffect(() => {
+    if (inlineTextReports.length === 0) return;
+    setInlineTextLoading(true);
+    const controller = new AbortController();
+    const fetchers = inlineTextReports.map((r) =>
+      fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.text() : `*加载失败*`))
+        .then((content) => ({ label: r.label, content }))
+        .catch(() => ({ label: r.label, content: "*加载失败*" }))
+    );
+    Promise.all(fetchers)
+      .then((results) => setInlineTextContents(results))
+      .finally(() => setInlineTextLoading(false));
+    return () => controller.abort();
+  }, [inlineTextReports.map(r => r.file).join(",")]);
+
   // Load Mode 3 extension data
   useEffect(() => {
     const controller = new AbortController();
@@ -287,16 +313,15 @@ function UploadedResultContent() {
       items: [
         { id: "demographics", label: "样本构成", available: !!hasDemographics },
         { id: "usage", label: "选择题统计", available: !!hasUsage },
-        { id: "likert", label: "量表分析", available: !!hasLikert },
-        { id: "text", label: "文本分析", available: !!hasText },
+        { id: "likert", label: "量表分析", available: !!hasLikert || !!hasLikertLlm },
+        { id: "text", label: "文本分析", available: !!hasText || !!hasInlineTextLlm },
         { id: "cross", label: "交叉分析", available: !!hasCrossAnalysis },
       ],
     },
     {
       label: "AI 洞察",
       items: [
-        { id: "likertLlm", label: "量表洞察", available: !!hasLikertLlm },
-        { id: "llm", label: "LLM 深度洞察", available: !!hasLlmReports },
+        { id: "comprehensive", label: "综合洞察报告", available: !!hasComprehensiveReport },
       ],
     },
     {
@@ -394,7 +419,7 @@ function UploadedResultContent() {
         )}
 
         {/* Chapter 2: 描述统计 */}
-        {(hasDemographics || hasUsage || hasLikert || hasText || hasCrossAnalysis) && (
+        {(hasDemographics || hasUsage || hasLikert || hasLikertLlm || hasText || hasInlineTextLlm || hasCrossAnalysis) && (
           <ChapterSection id="descriptive-stats" title="描述统计">
             {hasDemographics && data && (
               <div id="demographics">
@@ -408,16 +433,49 @@ function UploadedResultContent() {
                 <UsagePanel usage={data.genai_usage!} />
               </div>
             )}
-            {hasLikert && data && (
+            {(hasLikert || hasLikertLlm) && data && (
               <div id="likert">
                 <PanelHeading>量表分析</PanelHeading>
-                <LikertPanel likert={data.likert_scales || {}} />
+                {hasLikert && <LikertPanel likert={data.likert_scales || {}} />}
+                {hasLikertLlm && (
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h5 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-4">
+                      LLM 深度解读
+                    </h5>
+                    <LikertLlmPanel data={likertJson as unknown as import("@/components/analysis/LikertLlmPanel").LikertLlmData | null} />
+                  </div>
+                )}
               </div>
             )}
-            {hasText && data && (
+            {(hasText || hasInlineTextLlm) && data && (
               <div id="text">
                 <PanelHeading>开放题文本分析</PanelHeading>
-                <KeywordsPanel textAnalysis={data.text_analysis || {}} />
+                {hasText && <KeywordsPanel textAnalysis={data.text_analysis || {}} />}
+                {hasInlineTextLlm && (
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-5">
+                    <h5 className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                      LLM 逐题深度解读
+                    </h5>
+                    {inlineTextLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-4 h-4 animate-spin text-purple-500 mr-2" />
+                        <span className="text-sm text-gray-500 dark:text-gray-400">加载文本洞察...</span>
+                      </div>
+                    ) : (
+                      inlineTextContents.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none"
+                        >
+                          <h6 className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3">
+                            {item.label}
+                          </h6>
+                          <MarkdownRenderer content={item.content} />
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             )}
             {hasCrossAnalysis && data && (
@@ -429,43 +487,22 @@ function UploadedResultContent() {
           </ChapterSection>
         )}
 
-        {/* Chapter 3: AI 洞察 */}
-        {(hasLikertLlm || hasLlmReports) && (
-          <ChapterSection id="ai-insights" title="AI 洞察">
-            {hasLikertLlm && (
-              <div id="likertLlm">
-                <PanelHeading>量表洞察</PanelHeading>
-                <LikertLlmPanel data={likertJson as unknown as import("@/components/analysis/LikertLlmPanel").LikertLlmData | null} />
-              </div>
-            )}
-            {hasLlmReports && (
-              <div id="llm">
-                <PanelHeading>LLM 深度洞察</PanelHeading>
-                {llmLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-                    <span className="text-sm text-gray-500 dark:text-gray-400">加载 LLM 报告...</span>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {llmReports.map((report, idx) => {
-                      const content = llmContents[idx] || "";
-                      return (
-                        <div
-                          key={report.file}
-                          className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 prose prose-sm max-w-none"
-                        >
-                          <h5 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                            {report.label}
-                          </h5>
-                          <MarkdownRenderer content={content} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Chapter 3: AI 综合洞察 */}
+        {hasComprehensiveReport && (
+          <ChapterSection id="ai-insights" title="AI 综合洞察">
+            <div id="comprehensive">
+              <PanelHeading>综合洞察报告</PanelHeading>
+              {llmLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">加载综合报告...</span>
+                </div>
+              ) : (
+                <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-6 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none">
+                  <MarkdownRenderer content={llmContents[llmReports.indexOf(comprehensiveReport!)] || ""} />
+                </div>
+              )}
+            </div>
           </ChapterSection>
         )}
 

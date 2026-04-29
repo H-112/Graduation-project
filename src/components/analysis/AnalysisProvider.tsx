@@ -11,7 +11,7 @@ import {
 
 export type AnalysisMode = "quick_overview" | "ai_insights" | "deep_research";
 
-export type AnalysisStatus =
+export type UIJobStatus =
   | "idle"
   | "uploading"
   | "analyzing"
@@ -64,7 +64,7 @@ export interface AnalysisJob {
   filePath: string;
   mode: AnalysisMode;
   datasetName: string;
-  status: AnalysisStatus;
+  status: UIJobStatus;
   progressLog: ProgressEntry[];
   roundProgress: { current: number; total: number; title: string } | null;
   skillSteps: SkillLevels | null;
@@ -249,16 +249,21 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         }
         setActiveJob((prev) => {
           if (!prev) return prev;
+          const newLog = [
+            ...prev.progressLog,
+            {
+              text: msg,
+              stage: (event.stage as string) || "progress",
+              timestamp: Date.now(),
+            },
+          ];
+          // 限制日志条数，防止内存膨胀
+          if (newLog.length > 500) {
+            newLog.splice(0, newLog.length - 500);
+          }
           return {
             ...prev,
-            progressLog: [
-              ...prev.progressLog,
-              {
-                text: msg,
-                stage: (event.stage as string) || "progress",
-                timestamp: Date.now(),
-              },
-            ],
+            progressLog: newLog,
             roundProgress: roundProgress ?? prev.roundProgress,
           };
         });

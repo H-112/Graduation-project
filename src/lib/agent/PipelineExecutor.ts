@@ -359,7 +359,7 @@ export class PipelineExecutor {
           adjacency.set(dep, []);
         }
         adjacency.get(dep)!.push(s.name);
-        inDegree.set(s.name, (inDegree.get(s.name) || 0) + 1);
+        inDegree.set(s.name, (inDegree.get(s.name) ?? 0) + 1);
       }
     }
 
@@ -380,7 +380,7 @@ export class PipelineExecutor {
       }
 
       for (const neighbor of adjacency.get(current) || []) {
-        const newDegree = (inDegree.get(neighbor) || 1) - 1;
+        const newDegree = (inDegree.get(neighbor) ?? 0) - 1;
         inDegree.set(neighbor, newDegree);
         if (newDegree === 0 && skillMap.has(neighbor)) {
           queue.push(neighbor);
@@ -426,7 +426,7 @@ export class PipelineExecutor {
           adjacency.set(dep, []);
         }
         adjacency.get(dep)!.push(s.name);
-        inDegree.set(s.name, (inDegree.get(s.name) || 0) + 1);
+        inDegree.set(s.name, (inDegree.get(s.name) ?? 0) + 1);
       }
     }
 
@@ -448,7 +448,7 @@ export class PipelineExecutor {
       const nextLevel: string[] = [];
       for (const name of currentLevel) {
         for (const neighbor of adjacency.get(name) || []) {
-          const newDegree = (inDegree.get(neighbor) || 1) - 1;
+          const newDegree = (inDegree.get(neighbor) ?? 0) - 1;
           inDegree.set(neighbor, newDegree);
           if (newDegree === 0 && skillMap.has(neighbor)) {
             nextLevel.push(neighbor);
@@ -469,26 +469,73 @@ export class PipelineExecutor {
   }
 
   /**
-   * 评估 Skill 的 when 条件表达式
-   * 支持 $context.xxx 和 $input.xxx 模板变量
-   * 失败时默认返回 true（fail-open）
+   * 安全表达式求值器 — 仅支持白名单操作符，不使用 eval/new Function
+   * 支持: >=, <=, >, <, ==, !=, ===, !== 以及 tru thy 检查
    */
   private _evaluateWhen(when: string, input: SkillInput): boolean {
-    const expr = when
-      .replace(/\$context\.(\w+)/g, (_, key) => {
-        const val = this.context.get(key);
-        return JSON.stringify(val);
-      })
-      .replace(/\$input\.(\w+)/g, (_, key) => {
-        const val = (input as unknown as Record<string, unknown>)[key];
-        return JSON.stringify(val);
-      });
     try {
-      return new Function(`return (${expr})`)() as boolean;
+      // Step 1: 解析表达式 — 提取左值、操作符、右值
+      const expr = when.trim();
+
+      // 先替换模板变量为实际值
+      const resolved = this._resolveWhenTemplate(expr, input);
+
+      // Step 2: 尝试匹配比较表达式
+      const cmpMatch = resolved.match(
+        /^(.+?)\s*(>=|<=|===|!==|==|!=|>|<)\s*(.+?)$/
+      );
+      if (cmpMatch) {
+        const [, leftRaw, op, rightRaw] = cmpMatch;
+        const left = this._coerceWhenValue(leftRaw.trim());
+        const right = this._coerceWhenValue(rightRaw.trim());
+        switch (op) {
+          case ">=": return (left as number) >= (right as number);
+          case "<=": return (left as number) <= (right as number);
+          case ">":  return (left as number) >  (right as number);
+          case "<":  return (left as number) <  (right as number);
+          case "===": return left === right;
+          case "!==": return left !== right;
+          case "==":  return left == right;
+          case "!=":  return left != right;
+          default: return true;
+        }
+      }
+
+      // Step 3: 无操作符 → tru thy / falsy 检查
+      return !!this._coerceWhenValue(resolved);
     } catch {
       console.warn(`[PipelineExecutor] When expression eval failed: ${when}`);
       return true;
     }
+  }
+
+  /** 将 $context.xxx / $input.xxx 模板替换为 JSON 值 */
+  private _resolveWhenTemplate(expr: string, input: SkillInput): string {
+    return expr
+      .replace(/\$context\.(\w+)/g, (_, key) => {
+        const val = this.context.get(key);
+        return val === undefined ? "undefined" : JSON.stringify(val);
+      })
+      .replace(/\$input\.(\w+)/g, (_, key) => {
+        const val = (input as unknown as Record<string, unknown>)[key];
+        return val === undefined ? "undefined" : JSON.stringify(val);
+      });
+  }
+
+  /** 将当值字符串转为对应的 JS 原始值 */
+  private _coerceWhenValue(raw: string): unknown {
+    if (raw === "undefined") return undefined;
+    if (raw === "null") return null;
+    if (raw === "true") return true;
+    if (raw === "false") return false;
+    // 数字
+    if (/^-?\d+(\.\d+)?$/.test(raw)) return parseFloat(raw);
+    // 字符串（去引号）
+    if ((raw.startsWith('"') && raw.endsWith('"')) ||
+        (raw.startsWith("'") && raw.endsWith("'"))) {
+      return raw.slice(1, -1);
+    }
+    return raw;
   }
 
   /** 将失败 Skill 的所有传递依赖标记为失败 */

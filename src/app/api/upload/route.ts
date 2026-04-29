@@ -6,6 +6,7 @@ import { addUploadRecord } from "@/lib/history";
 
 const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
 const RESULTS_DIR = path.join(process.cwd(), "data", "results");
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,10 +25,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 文件大小检查
+    const bytes = await file.arrayBuffer();
+    if (bytes.byteLength > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `文件过大（最大 ${MAX_FILE_SIZE / 1024 / 1024}MB）` },
+        { status: 413 }
+      );
+    }
+
     // 用随机 ID 作为文件名（短名，避免长 URL 和中文编码问题）
     const id = crypto.randomBytes(6).toString("hex");
     const safeName = `${id}${ext}`;
-    const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
     await mkdir(UPLOAD_DIR, { recursive: true });

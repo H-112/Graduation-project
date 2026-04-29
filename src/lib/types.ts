@@ -5,7 +5,10 @@
 export type QuestionType = 'single_choice' | 'multiple_choice' | 'text' | 'rating' | 'matrix';
 
 export type AnalysisMode = 'quick_overview' | 'ai_insights' | 'deep_research';
-export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
+export const ANALYSIS_MODES: AnalysisMode[] = ['quick_overview', 'ai_insights', 'deep_research'];
+
+// 后端分析任务状态（用于持久化）
+export type AnalysisJobStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 // 人口学分布
 export interface DistributionItem {
@@ -30,14 +33,6 @@ export interface CategoricalResult {
   avg_selections_per_respondent?: number;
   distribution: DistributionItem[];
   merged_from?: string[];
-}
-
-// 频数分析
-export interface FrequencyResult {
-  questionId: string;
-  questionTitle: string;
-  options: Array<{ label: string; count: number; percentage: number }>;
-  totalResponses: number;
 }
 
 // 描述性统计
@@ -193,15 +188,4 @@ export interface QuickOverviewResult {
   cross_analysis?: CrossAnalysisResult[];
   quality_metrics?: QualityMetrics;
   structure_meta?: StructureMetaItem[];
-}
-
-export interface AnalysisTask {
-  id: string;
-  questionnaireId: string;
-  mode: AnalysisMode;
-  status: AnalysisStatus;
-  progress: number;
-  result: QuickOverviewResult | null;
-  duration_ms: number | null;
-  created_at: string;
 }

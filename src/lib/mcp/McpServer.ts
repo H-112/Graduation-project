@@ -84,7 +84,15 @@ export abstract class McpServer {
     }
 
     // 验证工具是否存在于 manifest
-    const toolDef = this.manifest.capabilities.tools.find(t => t.name === name);
+    const tools = this.manifest?.capabilities?.tools;
+    if (!tools) {
+      return jsonRpcErr(
+        id,
+        JSON_RPC_ERRORS.INTERNAL_ERROR,
+        `Server "${this.manifest?.name ?? "unknown"}" has no tools configured`
+      );
+    }
+    const toolDef = tools.find(t => t.name === name);
     if (!toolDef) {
       return jsonRpcErr(
         id,

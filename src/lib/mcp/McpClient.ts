@@ -7,6 +7,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import crypto from "crypto";
 import type { ToolManifest, ToolCallResult, JsonRpcRequest } from "./protocol";
 import { McpServer } from "./McpServer";
 
@@ -34,16 +35,6 @@ export class McpClient {
       console.warn(`[McpClient] Server "${name}" already registered, replacing...`);
     }
     this.servers.set(name, server);
-  }
-
-  /** 移除一个进程内 MCP Server */
-  unregister(name: string): boolean {
-    return this.servers.delete(name);
-  }
-
-  /** 获取已注册的进程内 Server */
-  getServer(name: string): McpServer | undefined {
-    return this.servers.get(name);
   }
 
   /** 注册一个 stdio MCP Server（启动独立子进程） */
@@ -74,25 +65,18 @@ export class McpClient {
     console.log(`[McpClient] stdio Server "${name}" connected (pid=${transport.pid ?? "?"})`);
   }
 
-  /** 关闭指定 stdio Server */
-  async unregisterStdio(name: string): Promise<void> {
-    if (this.stdioClients.has(name)) {
-      await this._closeStdio(name);
-    }
-  }
-
   private async _closeStdio(name: string): Promise<void> {
     const client = this.stdioClients.get(name);
     const transport = this.stdioTransports.get(name);
     try {
       await client?.close();
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn(`[McpClient] Error closing stdio client "${name}": ${err instanceof Error ? err.message : String(err)}`);
     }
     try {
       await transport?.close();
-    } catch {
-      // ignore
+    } catch (err) {
+      console.warn(`[McpClient] Error closing stdio transport "${name}": ${err instanceof Error ? err.message : String(err)}`);
     }
     this.stdioClients.delete(name);
     this.stdioTransports.delete(name);
@@ -129,33 +113,6 @@ export class McpClient {
     }
 
     return result;
-  }
-
-  /** 列出指定 Server 的工具 */
-  async listServerTools(serverName: string): Promise<ToolManifest[]> {
-    // 进程内
-    const local = this.servers.get(serverName);
-    if (local) {
-      return local.manifest.capabilities.tools;
-    }
-
-    // stdio
-    const client = this.stdioClients.get(serverName);
-    if (client) {
-      try {
-        const tools = await client.listTools();
-        return tools.tools.map((t) => ({
-          name: t.name,
-          description: t.description ?? "",
-          inputSchema: t.inputSchema as ToolManifest["inputSchema"],
-        }));
-      } catch (err) {
-        console.warn(`[McpClient] Failed to list tools from stdio server "${serverName}":`, err);
-        return [];
-      }
-    }
-
-    return [];
   }
 
   /**
@@ -225,7 +182,7 @@ export class McpClient {
 
     const request: JsonRpcRequest = {
       jsonrpc: "2.0",
-      id: Date.now(),
+      id: crypto.randomUUID(),
       method: "tools/call",
       params: { name: toolName, arguments: args },
     };

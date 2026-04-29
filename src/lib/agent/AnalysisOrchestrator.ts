@@ -56,7 +56,8 @@ export class AnalysisOrchestrator {
   async run(
     filePath: string,
     mode: AnalysisMode,
-    datasetName?: string
+    datasetName?: string,
+    signal?: AbortSignal
   ): Promise<Response> {
     // 延迟初始化
     if (!this.initialized) {
@@ -75,11 +76,21 @@ export class AnalysisOrchestrator {
 
     const analysisId = crypto.randomBytes(6).toString("hex");
 
+    // SSE 最大连接时长（15 分钟）
+    const SSE_MAX_DURATION_MS = 15 * 60 * 1000;
+
     const stream = new ReadableStream({
       start: async (controller) => {
         const emitter = new ProgressEmitter(controller);
         const context = new AnalysisContext();
         const startTime = Date.now();
+
+        // SSE 连接上限
+        let streamTimeout: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+          emitter.error("连接超时", "分析超过 15 分钟上限，连接已关闭");
+          emitter.done();
+          controller.close();
+        }, SSE_MAX_DURATION_MS);
 
         // 初始化输入
         const input: SkillInput = {
@@ -116,7 +127,11 @@ export class AnalysisOrchestrator {
               context.has("resultPath")
           );
 
-          if (!descResult && mode !== "deep_research") {
+          if (!descResult) {
+            // deep_research 模式下即使核心分析失败也不应返回空结果
+            const failureMsg = mode === "deep_research"
+              ? "深度研究模式下核心统计分析未完成"
+              : "核心统计分析未成功完成";
             const duration_ms = Date.now() - startTime;
             const apiCalls = (context.get("__apiCalls") as number) || 0;
             const tokenUsage = context.get("__tokenUsage") as HistoryRecord["tokenUsage"] | undefined;
@@ -126,13 +141,15 @@ export class AnalysisOrchestrator {
               filePath,
               mode,
               status: "failed",
-              error: "核心统计分析未成功完成",
+              error: failureMsg,
               duration_ms,
               apiCalls,
               tokenUsage,
             });
-            emitter.error("分析失败", "核心统计分析未成功完成");
+            emitter.error("分析失败", failureMsg);
             emitter.done();
+            clearTimeout(streamTimeout);
+            streamTimeout = null;
             controller.close();
             return;
           }
@@ -156,8 +173,8 @@ export class AnalysisOrchestrator {
             try {
               await fs.copyFile(resultPath, path.join(publicDir, path.basename(resultPath)));
               resultUrl = `/data/results/${path.basename(resultPath)}`;
-            } catch {
-              // 复制失败不影响
+            } catch (copyErr) {
+              emitter.log(`[warn] 复制结果文件失败: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`);
             }
           }
 
@@ -189,8 +206,8 @@ export class AnalysisOrchestrator {
               const destName = `deep_research_${path.basename(deepResearchReport)}`;
               await fs.copyFile(deepResearchReport, path.join(reportPublicDir, destName));
               deepResearchReportUrl = `/data/results/${destName}`;
-            } catch {
-              // 复制失败不影响
+            } catch (copyErr) {
+              emitter.log(`[warn] 复制深度研究报告失败: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`);
             }
           }
 
@@ -204,7 +221,8 @@ export class AnalysisOrchestrator {
               const destName = `${prefix}_${path.basename(filePath)}`;
               await fs.copyFile(filePath, path.join(reportPublicDir, destName));
               return `/data/results/${destName}`;
-            } catch {
+            } catch (copyErr) {
+              emitter.log(`[warn] 复制洞察文件 (${prefix}) 失败: ${copyErr instanceof Error ? copyErr.message : String(copyErr)}`);
               return "";
             }
           }
@@ -273,6 +291,7 @@ export class AnalysisOrchestrator {
           });
 
           emitter.done();
+          if (streamTimeout) { clearTimeout(streamTimeout); streamTimeout = null; }
           controller.close();
         } catch (err) {
           const errorMsg = err instanceof Error ? err.message : String(err);
@@ -292,8 +311,14 @@ export class AnalysisOrchestrator {
           });
           emitter.error("分析引擎异常", errorMsg);
           emitter.done();
+          if (streamTimeout) { clearTimeout(streamTimeout); streamTimeout = null; }
           controller.close();
         }
+      },
+      // 当客户端断开连接时，cancel 被调用
+      cancel() {
+        // ReadableStream cancel — 客户端 disconnected
+        console.log(`[AnalysisOrchestrator] Client disconnected for analysis ${analysisId}`);
       },
     });
 

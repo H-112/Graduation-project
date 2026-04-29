@@ -30,18 +30,7 @@ def _print_tokens():
     print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
 
 
-def load_env():
-    env_file = Path(__file__).parent.parent / ".env"
-    if env_file.exists():
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    k, v = k.strip(), v.strip().strip('"').strip("'")
-                    if k not in os.environ:
-                        os.environ[k] = v
-
+from env_loader import load_env
 
 load_env()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")

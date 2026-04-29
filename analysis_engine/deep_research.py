@@ -11,9 +11,11 @@ import math
 import os
 import sys
 import re
-import time
+from datetime import datetime
 from pathlib import Path
-from utils import progress, validate_path, sanitize_prompt_text
+import time
+from utils import progress, validate_path, sanitize_prompt_text, analyze_sentiment
+from env_loader import load_env
 from collections import Counter, defaultdict
 from typing import Any
 
@@ -61,18 +63,6 @@ def _print_tokens():
     print(f"[TOKENS] {json.dumps(_token_usage, ensure_ascii=False)}", flush=True)
 
 # ── 工具函数 ────────────────────────────────────
-
-def load_env():
-    env_file = Path(__file__).parent.parent / ".env"
-    if env_file.exists():
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    k, v = k.strip(), v.strip().strip('"').strip("'")
-                    if k not in os.environ:
-                        os.environ[k] = v
 
 load_env()
 
@@ -174,7 +164,6 @@ def round_1_cross_analysis(data: dict, headers: list, rows: list) -> dict:
                         "sample_table": {r: {c: table[r].get(c, 0) for c in col_labels[:3]} for r in row_labels[:3]}
                     })
                     progress(f"  ✓ {h1[:40]} × {h2[:40]}: χ²={chi2:.2f}, p={p:.4f} **显著**")
-                    time.sleep(0.3)  # 让前端逐步接收进度
             except Exception as e:
                 pass
 
@@ -279,7 +268,6 @@ def round_2_group_comparison(data: dict, headers: list, rows: list) -> dict:
                         "significant": True,
                     })
                     progress(f"  ✓ {col[:40]} × {dem_col[:40]}: {test_type}={t_stat:.2f}, p={p:.4f} **显著**")
-                    time.sleep(0.3)
             except Exception:
                 pass
 
@@ -307,31 +295,24 @@ def round_3_text_deep_dive(data: dict, headers: list, rows: list) -> dict:
         if len(texts) < 10:
             continue
 
-        # 简单情感分析（基于关键词）
-        positive_words = {'满意', '喜欢', '支持', '赞同', '好', '优秀', '方便', ' helpful', '重要',
-                          '推荐', '希望', '积极', '乐观', '开心', '愉快', '认同', '肯定'}
-        negative_words = {'不满意', '反对', '差', '糟糕', '困难', '麻烦', '问题', '担忧', '焦虑',
-                          '失望', '消极', '悲观', '痛苦', '拒绝', '否定', '限制', '依赖', '不能'}
-
-        pos_count = 0
-        neg_count = 0
-        neu_count = 0
-        for t in texts:
-            p = sum(1 for w in positive_words if w in t)
-            n = sum(1 for w in negative_words if w in t)
-            if p > n:
-                pos_count += 1
-            elif n > p:
-                neg_count += 1
-            else:
-                neu_count += 1
-
-        total = len(texts)
-        sentiment = {
-            "positive": {"count": pos_count, "percentage": round(pos_count/total*100, 1)},
-            "neutral": {"count": neu_count, "percentage": round(neu_count/total*100, 1)},
-            "negative": {"count": neg_count, "percentage": round(neg_count/total*100, 1)},
-        }
+        # 使用 utils.analyze_sentiment 进行情感分析
+        sentiment_result = analyze_sentiment(texts)
+        if sentiment_result:
+            pos_count = int(sentiment_result["positive_ratio"] * len(texts) / 100)
+            neg_count = int(sentiment_result["negative_ratio"] * len(texts) / 100)
+            neu_count = len(texts) - pos_count - neg_count
+            sentiment = {
+                "positive": {"count": pos_count, "percentage": sentiment_result["positive_ratio"]},
+                "neutral": {"count": neu_count, "percentage": sentiment_result["neutral_ratio"]},
+                "negative": {"count": neg_count, "percentage": sentiment_result["negative_ratio"]},
+            }
+        else:
+            total = len(texts)
+            sentiment = {
+                "positive": {"count": 0, "percentage": 0},
+                "neutral": {"count": total, "percentage": 100},
+                "negative": {"count": 0, "percentage": 0},
+            }
 
         # 主题聚类（基于关键词）
         keywords = ta.get('top_keywords', [])
@@ -599,7 +580,7 @@ def _generate_fallback_report(data: dict, round_results: list) -> str:
     lines.append("## 三、建议")
     lines.append("基于上述分析，建议进一步关注显著差异群体和强关联规则所揭示的模式。")
     lines.append("")
-    lines.append(f"*报告生成时间: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')}*")
+    lines.append(f"*报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}*")
 
     return '\n'.join(lines)
 
@@ -609,6 +590,10 @@ def main():
     if len(sys.argv) < 4:
         print("Usage: python3 deep_research.py <input_json> <raw_file> <output_dir>")
         sys.exit(1)
+
+    # 每次运行重置 token 计数
+    global _token_usage
+    _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     try:
         input_json = validate_path(sys.argv[1], must_exist=True)
@@ -642,28 +627,24 @@ def main():
     r1_path = output_dir / "round_1_cross_analysis.json"
     with open(r1_path, 'w', encoding='utf-8') as f:
         json.dump(r1, f, ensure_ascii=False, indent=2)
-    time.sleep(2)  # 让前端有时间展示 Round 1 完成状态
 
     r2 = round_2_group_comparison(data, headers, rows)
     round_results.append(r2)
     r2_path = output_dir / "round_2_group_comparison.json"
     with open(r2_path, 'w', encoding='utf-8') as f:
         json.dump(r2, f, ensure_ascii=False, indent=2)
-    time.sleep(2)
 
     r3 = round_3_text_deep_dive(data, headers, rows)
     round_results.append(r3)
     r3_path = output_dir / "round_3_text_deep_dive.json"
     with open(r3_path, 'w', encoding='utf-8') as f:
         json.dump(r3, f, ensure_ascii=False, indent=2)
-    time.sleep(2)
 
     r4 = round_4_association_rules(data, headers, rows)
     round_results.append(r4)
     r4_path = output_dir / "round_4_association_rules.json"
     with open(r4_path, 'w', encoding='utf-8') as f:
         json.dump(r4, f, ensure_ascii=False, indent=2)
-    time.sleep(2)
 
     report = round_5_llm_synthesis(data, round_results, output_dir, base_name)
     report_path = output_dir / "deep_research_report.md"

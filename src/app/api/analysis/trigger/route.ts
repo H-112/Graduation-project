@@ -11,8 +11,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { orchestrator } from "@/lib/agent/AnalysisOrchestrator";
 import type { AnalysisMode } from "@/lib/types";
 
+export const ANALYSIS_MODES: AnalysisMode[] = [
+  "quick_overview",
+  "ai_insights",
+  "deep_research",
+];
+
 export async function POST(request: NextRequest): Promise<Response> {
-  const body = await request.json();
+  let body: { filePath?: string; mode?: string; datasetName?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "无效的请求数据" }, { status: 400 });
+  }
+
   const {
     filePath,
     mode = "quick_overview" as AnalysisMode,
@@ -24,12 +36,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   // 验证 mode
-  const validModes: AnalysisMode[] = [
-    "quick_overview",
-    "ai_insights",
-    "deep_research",
-  ];
-  if (!validModes.includes(mode)) {
+  if (!ANALYSIS_MODES.includes(mode as AnalysisMode)) {
     return NextResponse.json(
       { error: `无效的分析模式: ${mode}` },
       { status: 400 }
@@ -37,11 +44,12 @@ export async function POST(request: NextRequest): Promise<Response> {
   }
 
   try {
-    // 委托给编排引擎 — 返回 SSE Response
-    return await orchestrator.run(filePath, mode, datasetName);
+    // 委托给编排引擎 — 返回 SSE Response，传递 request.signal 以支持客户端断开
+    return await orchestrator.run(filePath, mode as AnalysisMode, datasetName, request.signal);
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "分析引擎启动失败";
+    const message = process.env.NODE_ENV === "production"
+      ? "分析引擎启动失败"
+      : err instanceof Error ? err.message : "分析引擎启动失败";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

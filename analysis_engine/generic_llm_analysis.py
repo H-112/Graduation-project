@@ -9,21 +9,9 @@ import sys
 from pathlib import Path
 from openai import OpenAI
 from utils import progress, validate_path, sanitize_prompt_text
+from env_loader import load_env
 
-# ── 环境变量加载 ──────────────────────────────────
-def _load_env():
-    env_file = Path(__file__).parent.parent / ".env"
-    if env_file.exists():
-        with open(env_file, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    k, v = k.strip(), v.strip().strip('"').strip("'")
-                    if k not in os.environ:
-                        os.environ[k] = v
-
-_load_env()
+load_env()
 
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = "https://api.deepseek.com"

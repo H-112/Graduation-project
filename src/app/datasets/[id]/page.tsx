@@ -9,7 +9,8 @@ import { DemographicsPanel } from "@/components/analysis/DemographicsPanel";
 import { UsagePanel } from "@/components/analysis/UsagePanel";
 import { LikertPanel } from "@/components/analysis/LikertPanel";
 import { KeywordsPanel } from "@/components/analysis/KeywordsPanel";
-import { LlmInsightsPanel, LLM_REPORTS } from "@/components/analysis/LlmInsightsPanel";
+import { LLM_REPORTS } from "@/components/analysis/LlmInsightsPanel";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { DataQualityPanel } from "@/components/analysis/DataQualityPanel";
 import { StructureMetaPanel } from "@/components/analysis/StructureMetaPanel";
 import { TableOfContents } from "@/components/analysis/TableOfContents";
@@ -33,6 +34,12 @@ export default function DatasetDetailPage() {
   const [gapData, setGapData] = useState<ResearchGapData | null>(null);
   const [causalData, setCausalData] = useState<CausalInferenceData | null>(null);
   const [biasData, setBiasData] = useState<SampleBiasData | null>(null);
+
+  // 内联 LLM 文本洞察
+  const [inlineTextContents, setInlineTextContents] = useState<{ label: string; content: string }[]>([]);
+  const [inlineTextLoading, setInlineTextLoading] = useState(false);
+  const [comprehensiveContent, setComprehensiveContent] = useState("");
+  const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -83,11 +90,45 @@ export default function DatasetDetailPage() {
     return () => controller.abort();
   }, [id]);
 
+  // 加载内联 LLM 文本洞察（逐题报告，不含综合报告）
+  useEffect(() => {
+    if (inlineTextLlmReports.length === 0) return;
+    setInlineTextLoading(true);
+    const controller = new AbortController();
+    const fetchers = inlineTextLlmReports.map((r) =>
+      fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.text() : `*加载失败*`))
+        .then((content) => ({ label: r.label, content }))
+        .catch(() => ({ label: r.label, content: "*加载失败*" }))
+    );
+    Promise.all(fetchers)
+      .then((results) => setInlineTextContents(results))
+      .finally(() => setInlineTextLoading(false));
+    return () => controller.abort();
+  }, [id]);
+
+  // 加载综合 LLM 报告
+  useEffect(() => {
+    if (!comprehensiveLlmReport) return;
+    setComprehensiveLoading(true);
+    const controller = new AbortController();
+    fetch(`/llm-reports/${encodeURIComponent(comprehensiveLlmReport.file)}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.text() : ""))
+      .then(setComprehensiveContent)
+      .finally(() => setComprehensiveLoading(false));
+    return () => controller.abort();
+  }, [id]);
+
   const hasDemographics = data?.demographics && Object.keys(data.demographics).length > 0;
   const hasUsage = data?.genai_usage && Object.keys(data.genai_usage).length > 0;
   const hasLikert = data?.likert_scales && Object.keys(data.likert_scales).length > 0;
   const hasText = data?.text_analysis && Object.keys(data.text_analysis).length > 0;
-  const hasLlm = !!LLM_REPORTS[id]?.length;
+  // 分离逐题洞察（内联到文本分析后面）和综合报告（独立章节）
+  const llmAllReports = LLM_REPORTS[id] || [];
+  const inlineTextLlmReports = llmAllReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
+  const comprehensiveLlmReport = llmAllReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
+  const hasInlineTextLlm = inlineTextLlmReports.length > 0;
+  const hasComprehensiveLlm = !!comprehensiveLlmReport;
   const hasQuality = data?.quality_metrics && data.quality_metrics.per_question.length > 0;
   const hasStructureMeta = data?.structure_meta && data.structure_meta.length > 0;
   const hasTheory = !!theoryData;
@@ -105,8 +146,8 @@ export default function DatasetDetailPage() {
         { id: "demographics", label: "样本构成", available: !!hasDemographics },
         { id: "usage", label: "选择题统计", available: !!hasUsage },
         { id: "likert", label: "量表分析", available: !!hasLikert },
-        { id: "text", label: "文本分析", available: !!hasText },
-        { id: "llm", label: "AI 洞察", available: !!hasLlm },
+        { id: "text", label: "文本分析", available: !!hasText || !!hasInlineTextLlm },
+        { id: "comprehensive", label: "综合洞察", available: !!hasComprehensiveLlm },
         { id: "structure", label: "识别详情", available: !!hasStructureMeta },
       ],
     },
@@ -221,22 +262,59 @@ export default function DatasetDetailPage() {
           )}
 
           {/* Text */}
-          {hasText && (
+          {(hasText || hasInlineTextLlm) && (
             <section id="text">
               <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
                 开放题文本分析
               </h3>
-              <KeywordsPanel textAnalysis={data.text_analysis || {}} />
+              {hasText && <KeywordsPanel textAnalysis={data.text_analysis || {}} />}
+              {hasInlineTextLlm && (
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-5">
+                  <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                    LLM 逐题深度解读
+                  </h4>
+                  {inlineTextLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-500 mr-2" />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">加载文本洞察...</span>
+                    </div>
+                  ) : (
+                    inlineTextContents.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none"
+                      >
+                        <h5 className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3">
+                          {item.label}
+                        </h5>
+                        <MarkdownRenderer content={item.content} />
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </section>
           )}
 
-          {/* LLM Insights */}
-          {hasLlm && (
-            <section id="llm">
+          {/* Comprehensive LLM Report */}
+          {hasComprehensiveLlm && (
+            <section id="comprehensive">
               <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                AI 深度洞察
+                AI 综合洞察
               </h3>
-              <LlmInsightsPanel datasetId={id} />
+              {comprehensiveLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">加载综合报告...</span>
+                </div>
+              ) : (
+                <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-6 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none">
+                  <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-4">
+                    {comprehensiveLlmReport?.label || "综合洞察报告"}
+                  </h4>
+                  <MarkdownRenderer content={comprehensiveContent} />
+                </div>
+              )}
             </section>
           )}
 

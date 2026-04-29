@@ -26,6 +26,16 @@ export function CompleteReportPanel({
   const [llmContents, setLlmContents] = useState<string[]>([]);
   const [llmLoading, setLlmLoading] = useState(false);
 
+  // 分离逐题洞察（内联到文本分析后面）和综合报告（独立章节）
+  const inlineTextLlmReports = llmReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
+  const comprehensiveLlmReport = llmReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
+  const inlineTextLlmContents = llmReports.map((r, i) => {
+    if (r.file.toLowerCase().includes("comprehensive")) return null;
+    return { label: r.label, content: llmContents[i] || "" };
+  }).filter(Boolean) as { label: string; content: string }[];
+  const comprehensiveIdx = llmReports.findIndex((r) => r.file.toLowerCase().includes("comprehensive"));
+  const comprehensiveContent = comprehensiveIdx >= 0 ? llmContents[comprehensiveIdx] || "" : "";
+
   // 并行加载所有 LLM 报告内容
   useEffect(() => {
     if (llmReports.length === 0) return;
@@ -108,45 +118,46 @@ export function CompleteReportPanel({
         </section>
       )}
 
-      {/* ── 五、文本关键词 ── */}
-      {hasText && (
+      {/* ── 五、开放题文本分析 ── */}
+      {(hasText || inlineTextLlmContents.length > 0) && (
         <section>
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
             五、开放题文本分析
           </h3>
-          <KeywordsPanel textAnalysis={data.text_analysis} />
+          {hasText && <KeywordsPanel textAnalysis={data.text_analysis} />}
+          {inlineTextLlmContents.length > 0 && (
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-5">
+              <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">
+                LLM 逐题深度解读
+              </h4>
+              {inlineTextLlmContents.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none"
+                >
+                  <h5 className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3">
+                    {item.label}
+                  </h5>
+                  <MarkdownRenderer content={item.content} />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
-      {/* ── 六、AI 深度洞察 ── */}
-      {llmReports.length > 0 && (
+      {/* ── 六、AI 综合洞察 ── */}
+      {comprehensiveLlmReport && (
         <section>
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-3 pb-2 border-b border-gray-100 dark:border-gray-700">
-            六、AI 深度洞察 (LLM)
+            六、AI 综合洞察 (LLM)
           </h3>
-          {llmLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-              <span className="text-sm text-gray-500 dark:text-gray-400">加载 LLM 报告...</span>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {llmReports.map((report, idx) => {
-                const content = llmContents[idx] || "";
-                return (
-                  <div
-                    key={report.file}
-                    className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 prose prose-sm max-w-none"
-                  >
-                    <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
-                      {report.label}
-                    </h4>
-                    <MarkdownRenderer content={content} />
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-6 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none">
+            <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-4">
+              {comprehensiveLlmReport.label}
+            </h4>
+            <MarkdownRenderer content={comprehensiveContent} />
+          </div>
         </section>
       )}
 
