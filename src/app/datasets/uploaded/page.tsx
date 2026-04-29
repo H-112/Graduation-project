@@ -294,6 +294,7 @@ function UploadedResultContent() {
           gapData={gapData}
           causalData={causalData}
           biasData={biasData}
+          historyId={id || undefined}
         />
       ) : data ? (
         <>

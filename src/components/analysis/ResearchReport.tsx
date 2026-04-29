@@ -20,8 +20,9 @@ import { TableOfContents, type TocGroup } from "./TableOfContents";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import {
   BookOpen, BarChart3, MessageSquare, Network, Lightbulb,
-  Printer, Search, ShieldAlert,
+  Printer, Search, ShieldAlert, ExternalLink,
 } from "lucide-react";
+import Link from "next/link";
 import { EvidenceBlock } from "./shared/EvidenceBlock";
 
 interface ResearchReportProps {
@@ -35,6 +36,7 @@ interface ResearchReportProps {
   gapData?: ResearchGapData | null;
   causalData?: CausalInferenceData | null;
   biasData?: SampleBiasData | null;
+  historyId?: string;
 }
 
 type SectionKey = "一" | "二" | "三" | "四" | "五" | "六";
@@ -147,16 +149,27 @@ export function ResearchReport(props: ResearchReportProps) {
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
               {parsed.title || data.dataset || "深度研究报告"}
             </h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-              <span>样本: {data.total_records} 份</span>
-              <span>·</span>
-              <span>字段: {data.total_fields} 列</span>
-              <span>·</span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
-                <BookOpen className="w-3 h-3" />
-                深度研究模式
-              </span>
+          <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>样本: {data.total_records} 份</span>
+            <span>·</span>
+            <span>字段: {data.total_fields} 列</span>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
+              <BookOpen className="w-3 h-3" />
+              深度研究模式
+            </span>
+          </div>
+          {props.historyId && (
+            <div className="mt-2">
+              <Link
+                href={`/datasets/${props.historyId}/deep-research`}
+                className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 underline"
+              >
+                <ExternalLink className="w-3 h-3" />
+                查看完整深度研究报告
+              </Link>
             </div>
+          )}
           </div>
           <button
             onClick={() => window.print()}

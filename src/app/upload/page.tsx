@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle,
   BarChart3, Sparkles, Terminal, ChevronDown, Search,
@@ -495,19 +496,18 @@ export default function UploadPage() {
               )}
 
               {/* Deep Research Report */}
-              {activeJob!.result.deepResearchReport && (
+              {activeJob!.result.deepResearchReport && activeJob!.result.id && (
                 <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800">
                   <h4 className="text-sm font-semibold text-amber-800 dark:text-amber-400 mb-2 flex items-center gap-2">
                     <Search className="w-4 h-4" />
                     深度研究报告
                   </h4>
-                  <a
-                    href={activeJob!.result.deepResearchReport}
-                    target="_blank"
+                  <Link
+                    href={`/datasets/${activeJob!.result.id}/deep-research`}
                     className="block text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 underline"
                   >
                     查看完整深度研究报告
-                  </a>
+                  </Link>
                 </div>
               )}
 

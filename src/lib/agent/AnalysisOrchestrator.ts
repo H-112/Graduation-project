@@ -258,7 +258,9 @@ export class AnalysisOrchestrator {
             try {
               const reportPublicDir = path.join(process.cwd(), "public", "data", "results");
               await fs.mkdir(reportPublicDir, { recursive: true });
-              const destName = `deep_research_${path.basename(deepResearchReport)}`;
+              // 从 resultPath 中提取 hash 作为文件名前缀，确保一致性
+              const resultBase = resultPath ? path.basename(resultPath, "_analysis.json") : "";
+              const destName = resultBase ? `${resultBase}_deep_research.md` : `deep_research_${path.basename(deepResearchReport)}`;
               await fs.copyFile(deepResearchReport, path.join(reportPublicDir, destName));
               deepResearchReportUrl = `/data/results/${destName}`;
             } catch (copyErr) {
