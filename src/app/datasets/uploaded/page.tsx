@@ -21,21 +21,7 @@ import { CausalInferencePanel, type CausalInferenceData } from "@/components/ana
 import { SampleBiasPanel, type SampleBiasData } from "@/components/analysis/SampleBiasPanel";
 import { ResearchReport } from "@/components/analysis/ResearchReport";
 import { Loader2, AlertCircle, Printer } from "lucide-react";
-
-interface HistoryRecord {
-  id: string;
-  resultUrl?: string;
-  deepReportUrl?: string;
-  llmReports?: string[];
-  likertReports?: string[];
-  theoryMappingUrl?: string;
-  actionableInsightsUrl?: string;
-  researchGapsUrl?: string;
-  causalHintsUrl?: string;
-  sampleBiasUrl?: string;
-  datasetName?: string;
-  mode?: string;
-}
+import type { HistoryRecord } from "@/lib/history";
 
 function ChapterSection({
   id,
@@ -374,7 +360,7 @@ function UploadedResultContent() {
   }
 
   return (
-    <div className="flex gap-8">
+    <div className="flex flex-col lg:flex-row gap-8">
       {/* Mode 3: 研究报告布局 */}
       {analysisMode === "deep_research" && data ? (
         <ResearchReport

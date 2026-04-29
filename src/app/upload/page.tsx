@@ -17,6 +17,13 @@ interface Preview {
   totalRows: number;
 }
 
+interface ExistingAnalysis {
+  id: string;
+  mode: string;
+  timestamp: string;
+  resultUrl?: string;
+}
+
 interface AnalysisResult {
   resultUrl: string;
   mode: string;
@@ -51,6 +58,7 @@ export default function UploadPage() {
   const [originalName, setOriginalName] = useState<string>("");
   const [mode, setMode] = useState<"quick_overview" | "ai_insights" | "deep_research">("quick_overview");
   const [showLog, setShowLog] = useState(false);
+  const [existingAnalyses, setExistingAnalyses] = useState<ExistingAnalysis[] | null>(null);
 
   const { activeJob, startAnalysis, dismissJob } = useAnalysis();
   const router = useRouter();
@@ -92,6 +100,7 @@ export default function UploadPage() {
       setPreview(data.preview);
       setFilePath(data.savedPath);
       setOriginalName(data.originalName || data.filename || "");
+      setExistingAnalyses(data.existingAnalyses || null);
       setUploadStatus("uploaded");
     } catch {
       setUploadStatus("idle");
@@ -100,7 +109,8 @@ export default function UploadPage() {
 
   const handleAnalyze = () => {
     if (!filePath) return;
-    startAnalysis(filePath, mode, originalName || file?.name || "");
+    // force=true 强制重新分析，不使用缓存
+    startAnalysis(filePath, mode, originalName || file?.name || "", true);
   };
 
   const handleViewResults = () => {
@@ -243,6 +253,48 @@ export default function UploadPage() {
             </table>
           </div>
         </details>
+      )}
+
+      {/* ── Existing analysis warning ── */}
+      {uploadStatus === "uploaded" && !hasJob && existingAnalyses && existingAnalyses.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-4 border border-amber-200 dark:border-amber-800 space-y-3">
+          <div className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-amber-600" />
+            <p className="font-medium text-amber-800 dark:text-amber-400">
+              该文件已分析过 {existingAnalyses.length} 次
+            </p>
+          </div>
+          <div className="space-y-2">
+            {existingAnalyses.map((analysis) => (
+              <div
+                key={analysis.id}
+                className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg border border-amber-100 dark:border-amber-900/50"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {analysis.mode === "deep_research"
+                      ? "模式3 · 深度研究"
+                      : analysis.mode === "ai_insights"
+                      ? "模式2 · AI洞察"
+                      : "模式1 · 快速概览"}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(analysis.timestamp).toLocaleString("zh-CN")}
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push(`/datasets/uploaded?id=${analysis.id}`)}
+                  className="px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors"
+                >
+                  查看结果
+                </button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            您可以选择下方的分析模式重新分析，或直接查看已有结果。
+          </p>
+        </div>
       )}
 
       {/* ── Mode selector (only before analysis starts) ── */}

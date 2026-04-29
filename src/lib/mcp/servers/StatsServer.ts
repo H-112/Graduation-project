@@ -54,7 +54,8 @@ export class StatsServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "analyze_dataset":
@@ -63,7 +64,8 @@ export class StatsServer extends McpServer {
           args.outputDir as string,
           args.llmMap as string | undefined,
           args.datasetName as string | undefined,
-          args.crossAnalysis as boolean | undefined
+          args.crossAnalysis as boolean | undefined,
+          signal
         );
       default:
         return {
@@ -78,7 +80,8 @@ export class StatsServer extends McpServer {
     outputDir: string,
     llmMap?: string,
     datasetName?: string,
-    crossAnalysis?: boolean
+    crossAnalysis?: boolean,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     if (!filePath || !outputDir) {
       return {
@@ -99,7 +102,10 @@ export class StatsServer extends McpServer {
 
     const result = await spawnPython(
       resolveScript("analysis_engine/analyze_generic.py"),
-      args
+      args,
+      undefined,
+      undefined,
+      signal
     );
 
     if (!result.success) {

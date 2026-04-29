@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { orchestrator } from "@/lib/agent/AnalysisOrchestrator";
+import { checkAnalysisLimit } from "@/lib/rate-limiter";
 import type { AnalysisMode } from "@/lib/types";
 
 export const ANALYSIS_MODES: AnalysisMode[] = [
@@ -18,7 +19,11 @@ export const ANALYSIS_MODES: AnalysisMode[] = [
 ];
 
 export async function POST(request: NextRequest): Promise<Response> {
-  let body: { filePath?: string; mode?: string; datasetName?: string };
+  // 限流检查
+  const limitError = await checkAnalysisLimit(request);
+  if (limitError) return limitError;
+
+  let body: { filePath?: string; mode?: string; datasetName?: string; force?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -29,6 +34,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     filePath,
     mode = "quick_overview" as AnalysisMode,
     datasetName,
+    force = false,
   } = body;
 
   if (!filePath) {
@@ -45,7 +51,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   try {
     // 委托给编排引擎 — 返回 SSE Response，传递 request.signal 以支持客户端断开
-    return await orchestrator.run(filePath, mode as AnalysisMode, datasetName, request.signal);
+    return await orchestrator.run(filePath, mode as AnalysisMode, datasetName, request.signal, force);
   } catch (err) {
     const message = process.env.NODE_ENV === "production"
       ? "分析引擎启动失败"

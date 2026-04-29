@@ -48,6 +48,8 @@ try:
 except ImportError:
     OpenAI = None
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 def _track_usage(response):
@@ -73,6 +75,10 @@ def get_llm_client():
     if not DEEPSEEK_API_KEY or not OpenAI:
         return None
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 # ── 数据加载 ────────────────────────────────────
 
@@ -268,7 +274,9 @@ def round_2_group_comparison(data: dict, headers: list, rows: list) -> dict:
                         "significant": True,
                     })
                     progress(f"  ✓ {col[:40]} × {dem_col[:40]}: {test_type}={t_stat:.2f}, p={p:.4f} **显著**")
-            except Exception:
+            except Exception as e:
+                import traceback
+                print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
                 pass
 
     progress(f"  Round 2 完成: 执行 {total_tests} 次检验，发现 {significant} 组显著差异")
@@ -441,7 +449,9 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
         try:
             content = md_file.read_text('utf-8')
             llm_reports_content.append(f"## {md_file.name}\n{content}")
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             pass
     if llm_reports_content:
         progress(f"  已加载 {len(llm_reports_content)} 份 Mode 2 报告")
@@ -532,7 +542,7 @@ def round_5_llm_synthesis(data: dict, round_results: list, out_dir: Path, base_n
 请用 Markdown 格式输出，标题层级清晰，关键数据加粗。"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是资深社会科学研究顾问，擅长从多维度数据中提炼深层洞察并撰写高质量研究报告。输出必须简洁直接，禁止写开场白、自我介绍和套话。"},

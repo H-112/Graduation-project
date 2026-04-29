@@ -169,7 +169,7 @@ export default function DatasetDetailPage() {
         <div className="animate-pulse space-y-6">
           <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
           <div className="h-4 bg-gray-100 dark:bg-gray-800 rounded w-1/3" />
-          <div className="grid grid-cols-4 gap-4 mt-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded-xl" />
             ))}
@@ -189,7 +189,7 @@ export default function DatasetDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8">
-      <div className="flex gap-8">
+      <div className="flex flex-col lg:flex-row gap-8">
         {/* Main content */}
         <div className="flex-1 min-w-0 space-y-12">
           {/* Header */}

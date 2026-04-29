@@ -1,5 +1,6 @@
 ---
 name: NlpKeywordExtraction
+displayName: 关键词提取（NLP）
 description: >
   使用官方 MCP SDK stdio 模式的 NlpServer 对数据集名称进行关键词提取。
   作为 stdio PoC 验证 skill，确保 PipelineExecutor → McpClient → stdio Server

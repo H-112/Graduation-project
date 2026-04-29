@@ -4,6 +4,7 @@ analysis_engine 共享工具模块
 """
 
 import os
+import sys
 from pathlib import Path
 
 
@@ -154,7 +155,9 @@ def analyze_sentiment(texts):
                 sentiments["negative"] += 1
             else:
                 sentiments["neutral"] += 1
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             continue
 
     if not scores:

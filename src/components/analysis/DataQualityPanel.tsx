@@ -2,6 +2,8 @@
 
 import type { QualityMetrics, CleaningStats } from "@/lib/types";
 import { Shield, AlertTriangle, AlertCircle, CheckCircle2, Copy, EyeOff } from "lucide-react";
+import { EmptyState } from "./shared/EmptyState";
+import { TypeBadge } from "./shared/TypeBadge";
 
 interface DataQualityPanelProps {
   metrics?: QualityMetrics;
@@ -10,12 +12,7 @@ interface DataQualityPanelProps {
 
 export function DataQualityPanel({ metrics, cleaning }: DataQualityPanelProps) {
   if (!metrics || !cleaning) {
-    return (
-      <div className="text-center py-12">
-        <Shield className="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-        <p className="text-gray-500 dark:text-gray-400 text-sm">暂无数据质量指标</p>
-      </div>
-    );
+    return <EmptyState icon={Shield} message="暂无数据质量指标" />;
   }
 
   const { per_question, overall_missing_avg, high_missing_count, extreme_missing_count } = metrics;
@@ -213,35 +210,5 @@ function CleaningItem({ label, value, color }: { label: string; value: number; c
       <div className={`text-lg font-semibold ${color || "text-gray-900 dark:text-gray-100"}`}>{value}</div>
       <div className="text-[10px] text-gray-400 dark:text-gray-500">{label}</div>
     </div>
-  );
-}
-
-function TypeBadge({ type }: { type: string }) {
-  const labelMap: Record<string, string> = {
-    single_choice: "单选",
-    multi_select_single_col: "多选",
-    multi_select_column: "多选列",
-    multi_select_columns: "多选列",
-    likert: "量表",
-    text: "文本",
-    demographic: "人口学",
-    unknown: "未知",
-  };
-
-  const colorMap: Record<string, string> = {
-    single_choice: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-    multi_select_single_col: "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
-    multi_select_column: "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
-    multi_select_columns: "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
-    likert: "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
-    text: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
-    demographic: "bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400",
-    unknown: "bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400",
-  };
-
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${colorMap[type] || colorMap.unknown}`}>
-      {labelMap[type] || type}
-    </span>
   );
 }

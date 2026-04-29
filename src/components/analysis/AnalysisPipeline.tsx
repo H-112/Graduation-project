@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   FileSpreadsheet,
   LayoutList,
@@ -130,10 +131,8 @@ const STATUS_PRIORITY: Record<StepStatus, number> = {
   pending: 0,
 };
 
-function getStepStatus(stepId: string, logs: ProgressEntry[], isAnalyzing: boolean): StepStatus {
-  const relevant = logs.filter(
-    (l) => l.stage === stepId || l.text.startsWith(`[${stepId}]`)
-  );
+function getStepStatus(stepId: string, logMap: Map<string, ProgressEntry[]>, isAnalyzing: boolean): StepStatus {
+  const relevant = logMap.get(stepId) || [];
   if (relevant.length === 0) return "pending";
 
   for (let i = relevant.length - 1; i >= 0; i--) {
@@ -152,20 +151,18 @@ function getStepStatus(stepId: string, logs: ProgressEntry[], isAnalyzing: boole
 
 function getParallelGroupStatus(
   children: PipelineStepDef[],
-  logs: ProgressEntry[],
+  logMap: Map<string, ProgressEntry[]>,
   isAnalyzing: boolean
 ): StepStatus {
-  const statuses = children.map((c) => getStepStatus(c.id, logs, isAnalyzing));
+  const statuses = children.map((c) => getStepStatus(c.id, logMap, isAnalyzing));
   // 取优先级最高的状态
   return statuses.reduce((acc, s) =>
     STATUS_PRIORITY[s] > STATUS_PRIORITY[acc] ? s : acc
   );
 }
 
-function getRunningMessage(stepId: string, logs: ProgressEntry[]): string {
-  const relevant = logs.filter(
-    (l) => l.stage === stepId || l.text.startsWith(`[${stepId}]`)
-  );
+function getRunningMessage(stepId: string, logMap: Map<string, ProgressEntry[]>): string {
+  const relevant = logMap.get(stepId) || [];
   const last = relevant[relevant.length - 1];
   if (!last) return "";
   // Strip the [SkillName] prefix
@@ -174,10 +171,10 @@ function getRunningMessage(stepId: string, logs: ProgressEntry[]): string {
 
 function getParallelGroupRunningMessage(
   children: PipelineStepDef[],
-  logs: ProgressEntry[]
+  logMap: Map<string, ProgressEntry[]>
 ): string {
   const runningChildren = children.filter(
-    (c) => getStepStatus(c.id, logs, true) === "running"
+    (c) => getStepStatus(c.id, logMap, true) === "running"
   );
   if (runningChildren.length === 0) return "";
   return `${runningChildren.length} 个任务并行运行中`;
@@ -224,19 +221,30 @@ export function AnalysisPipeline({
 }) {
   const steps = dynamicSteps ? buildDynamicSteps(dynamicSteps) : (STEPS[mode] || []);
 
+  // 预计算日志映射表：O(n) 一次构建，后续查询 O(1)
+  const logMap = useMemo(() => {
+    const map = new Map<string, ProgressEntry[]>();
+    for (const log of logs) {
+      const key = log.stage || "unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(log);
+    }
+    return map;
+  }, [logs]);
+
   // Compute status for each step
   const stepStates = steps.map((step) => {
     if (isParallelGroup(step)) {
       return {
         ...step,
-        status: getParallelGroupStatus(step.children, logs, isAnalyzing),
-        message: getParallelGroupRunningMessage(step.children, logs),
+        status: getParallelGroupStatus(step.children, logMap, isAnalyzing),
+        message: getParallelGroupRunningMessage(step.children, logMap),
       };
     }
     return {
       ...step,
-      status: getStepStatus(step.id, logs, isAnalyzing),
-      message: getRunningMessage(step.id, logs),
+      status: getStepStatus(step.id, logMap, isAnalyzing),
+      message: getRunningMessage(step.id, logMap),
     };
   });
 
@@ -359,7 +367,7 @@ export function AnalysisPipeline({
                     {isParallelGroup(step) && (
                       <div className="mt-2 space-y-1.5">
                         {step.children.map((child) => {
-                          const childStatus = getStepStatus(child.id, logs, isAnalyzing);
+                          const childStatus = getStepStatus(child.id, logMap, isAnalyzing);
                           return (
                             <div
                               key={child.id}

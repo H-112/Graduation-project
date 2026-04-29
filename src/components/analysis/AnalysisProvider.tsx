@@ -79,7 +79,8 @@ interface AnalysisContextValue {
   startAnalysis: (
     filePath: string,
     mode: AnalysisMode,
-    datasetName: string
+    datasetName: string,
+    force?: boolean
   ) => void;
   dismissJob: () => void;
 }
@@ -105,7 +106,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startAnalysis = useCallback(
-    (filePath: string, mode: AnalysisMode, datasetName: string) => {
+    (filePath: string, mode: AnalysisMode, datasetName: string, force?: boolean) => {
       // 如果已有正在运行的分析，先 abort 掉（防止同时跑多个）
       if (abortRef.current) {
         abortRef.current.abort();
@@ -133,7 +134,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       fetch("/api/analysis/trigger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filePath, mode, datasetName }),
+        body: JSON.stringify({ filePath, mode, datasetName, force }),
         signal: controller.signal,
       })
         .then(async (response) => {

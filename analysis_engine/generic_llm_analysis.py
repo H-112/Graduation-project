@@ -10,6 +10,7 @@ from pathlib import Path
 from openai import OpenAI
 from utils import progress, validate_path, sanitize_prompt_text
 from env_loader import load_env
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_env()
 
@@ -35,6 +36,10 @@ def get_client():
         progress("错误: 未设置 DEEPSEEK_API_KEY")
         sys.exit(1)
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 # ── 提示词构建 ────────────────────────────────────
 
@@ -120,7 +125,7 @@ def analyze_text_question(client, ta, index, total):
 用中文回答，控制在500字以内。"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是专业的社会科学研究分析师，擅长从问卷数据中提取深层洞察。"},
@@ -169,7 +174,7 @@ def generate_comprehensive_report(client, data):
 语言简洁、客观，不写废话。"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是一位数据科学顾问，擅长提炼数据洞察。输出必须简洁直接，禁止写开场白、自我介绍和套话。"},

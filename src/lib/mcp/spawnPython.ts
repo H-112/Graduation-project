@@ -72,17 +72,22 @@ function releaseProcessSlot(): void {
 // debug-spawn.log 大小限制
 const DEBUG_LOG_MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
-function appendDebugLog(entry: string): void {
+async function appendDebugLog(entry: string): Promise<void> {
   try {
     const debugLog = path.join(process.cwd(), "debug-spawn.log");
-    const stat = fs.statSync(debugLog, { throwIfNoEntry: false });
-    if (stat && stat.size >= DEBUG_LOG_MAX_SIZE) {
-      // 轮转：保留最后 1MB
-      const buf = fs.readFileSync(debugLog);
-      const trimmed = buf.subarray(Math.max(0, buf.length - 1024 * 1024));
-      fs.writeFileSync(debugLog, trimmed);
+    const { stat, readFile, writeFile, appendFile } = await import("fs/promises");
+    try {
+      const s = await stat(debugLog);
+      if (s.size >= DEBUG_LOG_MAX_SIZE) {
+        // 轮转：保留最后 1MB
+        const buf = await readFile(debugLog);
+        const trimmed = buf.subarray(Math.max(0, buf.length - 1024 * 1024));
+        await writeFile(debugLog, trimmed);
+      }
+    } catch {
+      // 文件不存在，忽略
     }
-    fs.appendFileSync(debugLog, entry);
+    await appendFile(debugLog, entry);
   } catch {
     // ignore file write errors
   }
@@ -181,7 +186,7 @@ export function spawnPython(
       });
     });
 
-    proc.on("close", (code, signal) => {
+    proc.on("close", async (code, signal) => {
       clearTimeout(timer);
       releaseProcessSlot();
       if (killed || signal) {
@@ -214,7 +219,7 @@ export function spawnPython(
           stderr || "(empty)",
           "",
         ].join("\n");
-        appendDebugLog(entry);
+        await appendDebugLog(entry);
         resolve({
           success: false,
           stdout,

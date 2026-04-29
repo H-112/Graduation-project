@@ -16,6 +16,8 @@ try:
 except ImportError:
     OpenAI = None
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
@@ -42,6 +44,10 @@ def get_llm_client():
     if not DEEPSEEK_API_KEY or not OpenAI:
         return None
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 
 def load_json(path: str) -> dict:
@@ -111,7 +117,7 @@ def identify_domains(client, hints: str, theory_base: dict) -> list:
 }}"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是一位跨学科研究方法论专家，擅长判断研究主题所属领域。只输出JSON，不输出任何其他文字。"},
@@ -179,7 +185,9 @@ def build_mapping_context(data: dict, dr_dir: Path) -> str:
                         parts.append(f"- {sanitize_prompt_text(f_item['likert_column'])} × {sanitize_prompt_text(f_item['grouping_column'])}: p={f_item.get('p_value', 'N/A')}")
                     elif 'antecedent' in f_item:
                         parts.append(f"- {sanitize_prompt_text(f_item['antecedent'])} → {sanitize_prompt_text(f_item['consequent'])}: 置信度={f_item.get('confidence', 'N/A')}")
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             pass
 
     return "\n".join(parts)
@@ -224,7 +232,7 @@ def map_theory(client, theory: dict, context: str) -> dict:
 - neutral: 数据与该理论无关或不足以判断"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是理论映射分析专家。只输出JSON，不输出任何其他文字。"},

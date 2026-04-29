@@ -10,6 +10,7 @@ from pathlib import Path
 from openai import OpenAI
 from utils import progress, validate_path, sanitize_prompt_text
 from env_loader import load_env
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_env()
 
@@ -69,6 +70,10 @@ def get_client():
         progress("错误: 未设置 DEEPSEEK_API_KEY")
         sys.exit(1)
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 
 # ── JSON Schema 定义 ──────────────────────────────
@@ -196,7 +201,7 @@ def analyze_likert_scales(client, data):
 - 如果量表组只有1个题项，reliability_indicator 写"单题项量表，无法评估内部一致性"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {

@@ -15,6 +15,8 @@ try:
 except ImportError:
     OpenAI = None
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
@@ -41,6 +43,10 @@ def get_llm_client():
     if not DEEPSEEK_API_KEY or not OpenAI:
         return None
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 
 def load_json(path: str) -> dict:
@@ -102,7 +108,9 @@ def build_findings_summary(data: dict, dr_dir: Path) -> str:
                         parts.append(f"- {sanitize_prompt_text(f_item['likert_column'])} × {sanitize_prompt_text(f_item['grouping_column'])}: {f_item.get('test', 'N/A')}={f_item.get('statistic', 'N/A')}, p={f_item.get('p_value', 'N/A')}, 均值: {means_str}")
                     elif 'antecedent' in f_item:
                         parts.append(f"- {sanitize_prompt_text(f_item['antecedent'])} → {sanitize_prompt_text(f_item['consequent'])}: 置信度={f_item.get('confidence', 'N/A')}, 提升度={f_item.get('lift', 'N/A')}")
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             pass
 
     return "\n".join(parts)
@@ -144,7 +152,7 @@ def generate_insights(client, context: str) -> list:
 - 覆盖不同场景（至少2个category）"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是资深研究顾问和政策分析师。只输出JSON，不输出任何其他文字。"},

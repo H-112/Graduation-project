@@ -27,7 +27,8 @@ export abstract class McpServer {
 
   async handleRequest(
     request: JsonRpcRequest,
-    onProgress?: (msg: string) => void
+    onProgress?: (msg: string) => void,
+    signal?: AbortSignal
   ): Promise<JsonRpcResponse> {
     const { id, method } = request;
 
@@ -41,7 +42,7 @@ export abstract class McpServer {
           this._callTool(id, request.params as {
             name: string;
             arguments: Record<string, unknown>;
-          })
+          }, signal)
         );
       default:
         return jsonRpcErr(id, JSON_RPC_ERRORS.METHOD_NOT_FOUND, `Unknown method: ${method}`);
@@ -52,7 +53,8 @@ export abstract class McpServer {
 
   protected abstract executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult>;
 
   // ── 内置协议方法 ──
@@ -76,7 +78,8 @@ export abstract class McpServer {
 
   private async _callTool(
     id: number | string,
-    params: { name: string; arguments: Record<string, unknown> }
+    params: { name: string; arguments: Record<string, unknown> },
+    signal?: AbortSignal
   ): Promise<JsonRpcResponse> {
     const { name, arguments: args } = params || {};
     if (!name) {
@@ -102,7 +105,7 @@ export abstract class McpServer {
     }
 
     try {
-      const result = await this.executeTool(name, args || {});
+      const result = await this.executeTool(name, args || {}, signal);
       return jsonRpcOk(id, result);
     } catch (err) {
       return jsonRpcErr(

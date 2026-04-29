@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { QuickOverviewResult } from "@/lib/types";
 import { SummaryCards } from "./SummaryCards";
 import { DemographicsPanel } from "./DemographicsPanel";
@@ -154,7 +154,8 @@ function buildTocGroups(props: ResearchReportProps): TocGroup[] {
 
 export function ResearchReport(props: ResearchReportProps) {
   const { data, deepReport } = props;
-  const parsed = parseDeepReportSections(deepReport);
+  const parsed = useMemo(() => parseDeepReportSections(deepReport), [deepReport]);
+  const tocGroups = useMemo(() => buildTocGroups(props), [props]);
 
   const hasDemographics = data.demographics && Object.keys(data.demographics).length > 0;
   const hasUsage = data.genai_usage && Object.keys(data.genai_usage).length > 0;
@@ -171,8 +172,6 @@ export function ResearchReport(props: ResearchReportProps) {
   const hasReflectionSec = parsed.sections["六"] || !!props.biasData || !!props.gapData;
   const hasRecommendSec = parsed.sections["五"] || !!props.actionableData;
 
-  const tocGroups = buildTocGroups(props);
-
   const sectionOne = parsed.sections["一"];
   const sectionTwo = parsed.sections["二"];
   const sectionThree = parsed.sections["三"];
@@ -181,7 +180,7 @@ export function ResearchReport(props: ResearchReportProps) {
   const sectionSix = parsed.sections["六"];
 
   return (
-    <div className="flex gap-8">
+    <div className="flex flex-col lg:flex-row gap-8">
       {/* Main content */}
       <div className="flex-1 min-w-0 space-y-12">
         {/* ── Header ── */}
@@ -225,6 +224,24 @@ export function ResearchReport(props: ResearchReportProps) {
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">暂无概要数据</p>
           )}
+
+          {/* 样本特征分布 — 紧接研究概要 */}
+          {hasDemographics && (
+            <div className="mt-6">
+              <EvidenceBlock
+                icon={BarChart3}
+                title="样本特征分布"
+                summary={`${Object.keys(data.demographics || {}).length} 个人口学维度`}
+              >
+                <DemographicsPanel demographics={data.demographics || {}} />
+                {hasUsage && (
+                  <div className="mt-6">
+                    <UsagePanel usage={data.genai_usage!} />
+                  </div>
+                )}
+              </EvidenceBlock>
+            </div>
+          )}
         </section>
 
         {/* ── §2 核心发现 ── */}
@@ -241,21 +258,6 @@ export function ResearchReport(props: ResearchReportProps) {
 
             {/* 证据卡片 */}
             <div className="space-y-3">
-              {hasDemographics && (
-                <EvidenceBlock
-                  icon={BarChart3}
-                  title="样本特征分布"
-                  summary={`${Object.keys(data.demographics || {}).length} 个人口学维度`}
-                >
-                  <DemographicsPanel demographics={data.demographics || {}} />
-                  {hasUsage && (
-                    <div className="mt-6">
-                      <UsagePanel usage={data.genai_usage!} />
-                    </div>
-                  )}
-                </EvidenceBlock>
-              )}
-
               {(hasLikert || hasLikertLlm) && (
                 <EvidenceBlock
                   icon={BarChart3}
@@ -405,7 +407,6 @@ export function ResearchReport(props: ResearchReportProps) {
                   icon={Lightbulb}
                   title={`可操作建议 — ${props.actionableData.total ?? 0} 条`}
                   summary={`高优先 ${props.actionableData.priority_summary?.high ?? 0} · 中优先 ${props.actionableData.priority_summary?.medium ?? 0} · 低优先 ${props.actionableData.priority_summary?.low ?? 0}`}
-                  defaultOpen
                 >
                   <ActionableInsightPanel data={props.actionableData} />
                 </EvidenceBlock>

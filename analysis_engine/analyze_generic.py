@@ -13,6 +13,7 @@ from collections import Counter
 import re
 
 from utils import progress, tokenize_chinese, STOPWORDS, analyze_sentiment, analyze_length_distribution, validate_path, sanitize_prompt_text
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 def _dedupe_headers(headers):
     """给重复列名添加后缀，确保唯一性"""
@@ -44,17 +45,23 @@ def load_csv(filepath):
     return headers, rows
 
 def load_excel(filepath):
-    """加载Excel文件"""
+    """加载Excel文件 — 使用 read_only 模式减少内存占用"""
     import openpyxl
-    wb = openpyxl.load_workbook(filepath)
+    wb = openpyxl.load_workbook(filepath, read_only=True, data_only=True)
     ws = wb.active
-    raw_headers = [ws.cell(1, c).value or f"Column{c}" for c in range(1, ws.max_column + 1)]
+    # read_only 模式需要用 iter_rows
+    rows_iter = ws.iter_rows(values_only=True)
+    try:
+        first_row = next(rows_iter)
+    except StopIteration:
+        return [], []
+    raw_headers = [str(h) if h is not None else f"Column{i+1}" for i, h in enumerate(first_row)]
     headers = _dedupe_headers(raw_headers)
     rows = []
-    for r in range(2, ws.max_row + 1):
+    for row_values in rows_iter:
         row = {}
-        for c, h in enumerate(headers, 1):
-            val = ws.cell(r, c).value
+        for i, h in enumerate(headers):
+            val = row_values[i] if i < len(row_values) else None
             row[h] = str(val).strip() if val is not None else ""
         rows.append(row)
     return headers, rows
@@ -665,6 +672,10 @@ def get_deepseek_client():
         return None
     return OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
+
 
 def generate_cross_hypotheses(question_specs):
     """
@@ -712,7 +723,7 @@ def generate_cross_hypotheses(question_specs):
 """
 
     try:
-        resp = client.chat.completions.create(
+        resp = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
@@ -724,7 +735,9 @@ def generate_cross_hypotheses(question_specs):
         # 尝试直接解析
         try:
             return _json.loads(content)
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             # 从markdown代码块中提取
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0]
@@ -828,7 +841,9 @@ def run_cross_tab(rows, col_a, col_b, min_cell_count=5):
     # ── 第一步：先算皮尔逊卡方 + 期望频数 ──
     try:
         chi2_pearson, p_pearson, dof, expected = chi2_contingency(table, correction=False)
-    except Exception:
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
         return None
 
     # 期望频数分析
@@ -854,7 +869,9 @@ def run_cross_tab(rows, col_a, col_b, min_cell_count=5):
                 p = fisher_p
                 method = "fisher_exact"
                 chi2_valid = True
-            except Exception:
+            except Exception as e:
+                import traceback
+                print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
                 method = "pearson"
                 chi2_valid = False
         else:
@@ -865,7 +882,9 @@ def run_cross_tab(rows, col_a, col_b, min_cell_count=5):
                     chi2 = chi2_yates
                     p = p_yates
                     method = "yates"
-                except Exception:
+                except Exception as e:
+                    import traceback
+                    print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
                     pass
             # 若期望频数仍不满足，标记为不可靠
             if has_expected_lt_1:

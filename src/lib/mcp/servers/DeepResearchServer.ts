@@ -44,14 +44,16 @@ export class DeepResearchServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "run_deep_research":
         return this._runDeepResearch(
           args.inputJson as string,
           args.rawFile as string,
-          args.outputDir as string
+          args.outputDir as string,
+          signal
         );
       default:
         return {
@@ -64,7 +66,8 @@ export class DeepResearchServer extends McpServer {
   private async _runDeepResearch(
     inputJson: string,
     rawFile: string,
-    outputDir: string
+    outputDir: string,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     if (!inputJson || !rawFile || !outputDir) {
       return {
@@ -81,7 +84,9 @@ export class DeepResearchServer extends McpServer {
     const result = await spawnPython(
       resolveScript("analysis_engine/deep_research.py"),
       [inputJson, rawFile, outputDir],
-      (msg) => this.reportProgress(msg)
+      (msg) => this.reportProgress(msg),
+      undefined,
+      signal
     );
 
     if (!result.success) {

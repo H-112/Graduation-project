@@ -14,9 +14,20 @@ export class ProgressEmitter {
   ) {}
 
   private emit(event: SseEvent): void {
-    this.controller.enqueue(
-      this.encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
-    );
+    try {
+      this.controller.enqueue(
+        this.encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+      );
+    } catch (err) {
+      // 客户端已断开，静默丢弃避免进程崩溃
+      if (
+        err instanceof Error &&
+        err.message.includes("Controller is already closed")
+      ) {
+        return;
+      }
+      throw err;
+    }
   }
 
   phaseStart(skillName: string, description: string): void {

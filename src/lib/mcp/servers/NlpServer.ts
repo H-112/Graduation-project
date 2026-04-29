@@ -144,7 +144,8 @@ export class NlpServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "tokenize":

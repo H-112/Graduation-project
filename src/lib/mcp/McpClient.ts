@@ -123,7 +123,8 @@ export class McpClient {
     serverName: string,
     toolName: string,
     args: Record<string, unknown>,
-    onProgress?: (msg: string) => void
+    onProgress?: (msg: string) => void,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     // ── stdio 路由 ──
     if (this.stdioClients.has(serverName)) {
@@ -187,7 +188,7 @@ export class McpClient {
       params: { name: toolName, arguments: args },
     };
 
-    const response = await server.handleRequest(request, onProgress);
+    const response = await server.handleRequest(request, onProgress, signal);
 
     if (response.error) {
       return {

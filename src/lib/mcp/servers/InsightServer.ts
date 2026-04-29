@@ -100,38 +100,44 @@ export class InsightServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "map_theories":
         return this._runPythonScript(
           "analysis_engine/theory_mapping.py",
           [args.mode1ResultPath as string, args.deepResearchDir as string, args.outputDir as string],
-          name
+          name,
+          signal
         );
       case "generate_actionable_insights":
         return this._runPythonScript(
           "analysis_engine/generate_actionable_insights.py",
           [args.mode1ResultPath as string, args.deepResearchDir as string, args.outputDir as string],
-          name
+          name,
+          signal
         );
       case "analyze_research_gaps":
         return this._runPythonScript(
           "analysis_engine/research_gap.py",
           [args.mode1ResultPath as string, args.deepResearchDir as string, args.outputDir as string],
-          name
+          name,
+          signal
         );
       case "generate_causal_hints":
         return this._runPythonScript(
           "analysis_engine/causal_inference_hint.py",
           [args.mode1ResultPath as string, args.deepResearchDir as string, args.outputDir as string],
-          name
+          name,
+          signal
         );
       case "assess_sample_bias":
         return this._runPythonScript(
           "analysis_engine/sample_bias_assessment.py",
           [args.mode1ResultPath as string, args.rawFile as string, args.outputDir as string],
-          name
+          name,
+          signal
         );
       default:
         return {
@@ -144,12 +150,15 @@ export class InsightServer extends McpServer {
   private async _runPythonScript(
     scriptPath: string,
     args: string[],
-    toolName: string
+    toolName: string,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     const result = await spawnPython(
       resolveScript(scriptPath),
       args,
-      (msg) => this.reportProgress(msg)
+      (msg) => this.reportProgress(msg),
+      undefined,
+      signal
     );
 
     if (!result.success) {

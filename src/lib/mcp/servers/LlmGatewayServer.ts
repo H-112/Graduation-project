@@ -76,20 +76,23 @@ export class LlmGatewayServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "analyze_structure":
-        return this._analyzeStructure(args.filePath as string);
+        return this._analyzeStructure(args.filePath as string, signal);
       case "run_llm_analysis":
         return this._runLlmAnalysis(
           args.mode1ResultPath as string,
-          args.outputDir as string
+          args.outputDir as string,
+          signal
         );
       case "analyze_likert_scales":
         return this._analyzeLikertScales(
           args.mode1ResultPath as string,
-          args.outputDir as string
+          args.outputDir as string,
+          signal
         );
       default:
         return {
@@ -100,7 +103,10 @@ export class LlmGatewayServer extends McpServer {
   }
 
   /** 调用 llm_structure_analyzer.py — LLM 语义分析问卷结构 */
-  private async _analyzeStructure(filePath: string): Promise<ToolCallResult> {
+  private async _analyzeStructure(
+    filePath: string,
+    signal?: AbortSignal
+  ): Promise<ToolCallResult> {
     if (!filePath) {
       return {
         content: [
@@ -112,7 +118,10 @@ export class LlmGatewayServer extends McpServer {
 
     const result = await spawnPython(
       resolveScript("analysis_engine/llm_structure_analyzer.py"),
-      [filePath]
+      [filePath],
+      undefined,
+      undefined,
+      signal
     );
 
     if (!result.success) {
@@ -157,7 +166,8 @@ export class LlmGatewayServer extends McpServer {
   /** 调用 generic_llm_analysis.py — LLM 文本洞察 + 综合报告 */
   private async _runLlmAnalysis(
     mode1ResultPath: string,
-    outputDir: string
+    outputDir: string,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     if (!mode1ResultPath || !outputDir) {
       return {
@@ -173,7 +183,10 @@ export class LlmGatewayServer extends McpServer {
 
     const result = await spawnPython(
       resolveScript("analysis_engine/generic_llm_analysis.py"),
-      [mode1ResultPath, outputDir]
+      [mode1ResultPath, outputDir],
+      undefined,
+      undefined,
+      signal
     );
 
     if (!result.success) {
@@ -210,7 +223,8 @@ export class LlmGatewayServer extends McpServer {
   /** 调用 likert_llm_analysis.py — 量表 LLM 深度解读 (JSON Schema 约束) */
   private async _analyzeLikertScales(
     mode1ResultPath: string,
-    outputDir: string
+    outputDir: string,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     if (!mode1ResultPath || !outputDir) {
       return {
@@ -226,7 +240,10 @@ export class LlmGatewayServer extends McpServer {
 
     const result = await spawnPython(
       resolveScript("analysis_engine/likert_llm_analysis.py"),
-      [mode1ResultPath, outputDir]
+      [mode1ResultPath, outputDir],
+      undefined,
+      undefined,
+      signal
     );
 
     if (!result.success) {

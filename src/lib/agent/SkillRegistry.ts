@@ -4,7 +4,7 @@
 // 建立 skillName → SkillDefinition 映射
 // ============================================
 
-import fs from "fs";
+import { readdir, readFile } from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
 import type { AnalysisMode } from "../types";
@@ -15,9 +15,9 @@ export class SkillRegistry {
 
   /** 扫描 skillsDir 下所有 .md 文件并注册 */
   async loadAll(skillsDir: string): Promise<number> {
-    let entries: fs.Dirent[];
+    let entries: string[];
     try {
-      entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+      entries = await readdir(skillsDir);
     } catch {
       console.warn(`[SkillRegistry] Skills directory not found: ${skillsDir}`);
       return 0;
@@ -25,18 +25,18 @@ export class SkillRegistry {
 
     let count = 0;
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+      if (!entry.endsWith(".md")) continue;
 
-      const filePath = path.join(skillsDir, entry.name);
+      const filePath = path.join(skillsDir, entry);
       try {
-        const content = fs.readFileSync(filePath, "utf-8");
-        const skill = this._parse(content, entry.name);
+        const content = await readFile(filePath, "utf-8");
+        const skill = this._parse(content, entry);
         this.skills.set(skill.name, skill);
         count++;
         console.log(`[SkillRegistry] Registered: ${skill.name} (v${skill.version})`);
       } catch (err) {
         console.warn(
-          `[SkillRegistry] Failed to parse ${entry.name}: ${err instanceof Error ? err.message : String(err)}`
+          `[SkillRegistry] Failed to parse ${entry}: ${err instanceof Error ? err.message : String(err)}`
         );
       }
     }

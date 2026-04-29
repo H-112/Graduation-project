@@ -16,6 +16,8 @@ try:
 except ImportError:
     OpenAI = None
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 _token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 
@@ -42,6 +44,10 @@ def get_llm_client():
     if not DEEPSEEK_API_KEY or not OpenAI:
         return None
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 
 def load_json(path: str) -> dict:
@@ -80,7 +86,9 @@ def extract_associations(data: dict, dr_dir: Path) -> list:
                     "statistic": f"{f['test']}={f['statistic']}, p={f['p_value']}",
                     "strength": 0.5,  # 默认中等
                 })
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             pass
 
     # 从关联规则提取
@@ -97,7 +105,9 @@ def extract_associations(data: dict, dr_dir: Path) -> list:
                     "statistic": f"置信度={r['confidence']}, 提升度={r['lift']}",
                     "strength": r['confidence'],
                 })
-        except Exception:
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] {e}\n{traceback.format_exc()}", file=sys.stderr)
             pass
 
     return associations
@@ -143,7 +153,7 @@ def assess_causal_potential(client, associations: list) -> list:
 - low: 更可能是相关而非因果，或混淆变量太多"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是因果推断方法论专家。只输出JSON，不输出任何其他文字。"},

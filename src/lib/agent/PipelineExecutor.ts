@@ -27,7 +27,8 @@ export class PipelineExecutor {
    */
   async run(
     mode: AnalysisMode,
-    input: SkillInput
+    input: SkillInput,
+    signal?: AbortSignal
   ): Promise<SkillOutput[]> {
     const skills = this.registry.getApplicableSkills(mode);
 
@@ -54,14 +55,16 @@ export class PipelineExecutor {
 
     // Step 4: 按层级执行（同层并行）
     for (const level of levels) {
+      if (signal?.aborted) break;
+
       if (level.length === 1) {
         // 单层串行（保持原有逻辑）
-        await this._executeSingleSkill(level[0], input, failedSkills, results);
+        await this._executeSingleSkill(level[0], input, failedSkills, results, signal);
       } else {
         // 多层并行
         const levelResults = await Promise.all(
           level.map((skill) =>
-            this._executeSingleSkill(skill, input, failedSkills, results)
+            this._executeSingleSkill(skill, input, failedSkills, results, signal)
           )
         );
         // levelResults 已自动 push 到 results（_executeSingleSkill 内部处理）
@@ -81,8 +84,17 @@ export class PipelineExecutor {
     skill: SkillDefinition,
     input: SkillInput,
     failedSkills: Set<string>,
-    results: SkillOutput[]
+    results: SkillOutput[],
+    signal?: AbortSignal
   ): Promise<SkillOutput> {
+    if (signal?.aborted) {
+      const output: SkillOutput = {
+        success: false,
+        error: "分析已取消",
+      };
+      results.push(output);
+      return output;
+    }
     // 检查是否有依赖失败
     const blockedBy = skill.dependencies.filter((dep) =>
       failedSkills.has(dep)
@@ -118,7 +130,7 @@ export class PipelineExecutor {
     this.emitter.phaseStart(skill.name, "");
 
     try {
-      const output = await this._executeSkill(skill, input);
+      const output = await this._executeSkill(skill, input, signal);
       results.push(output);
 
       if (output.success) {
@@ -172,7 +184,8 @@ export class PipelineExecutor {
 
   private async _executeSkill(
     skill: SkillDefinition,
-    input: SkillInput
+    input: SkillInput,
+    signal?: AbortSignal
   ): Promise<SkillOutput> {
     // 无 MCP 工具的 Skill（如 LlmComprehensiveReport）— 从 context 提取数据
     if (!skill.mcpTools || skill.mcpTools.length === 0) {
@@ -188,12 +201,12 @@ export class PipelineExecutor {
       );
 
       // MCP 调用日志已简化，仅保留关键节点
-
       const result = await this.client.callTool(
         toolRef.server,
         toolRef.tool,
         resolvedParams,
-        (msg) => this.emitter.progress(msg, skill.name)
+        (msg) => this.emitter.progress(msg, skill.name),
+        signal
       );
 
       // 统计 API 调用次数 和 Token 用量

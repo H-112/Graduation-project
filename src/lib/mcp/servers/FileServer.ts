@@ -35,11 +35,12 @@ export class FileServer extends McpServer {
 
   protected async executeTool(
     name: string,
-    args: Record<string, unknown>
+    args: Record<string, unknown>,
+    signal?: AbortSignal
   ): Promise<ToolCallResult> {
     switch (name) {
       case "preview_file":
-        return this._previewFile(args.filePath as string);
+        return this._previewFile(args.filePath as string, signal);
       default:
         return {
           content: [{ type: "text", text: `Unknown tool: ${name}` }],
@@ -48,7 +49,10 @@ export class FileServer extends McpServer {
     }
   }
 
-  private async _previewFile(filePath: string): Promise<ToolCallResult> {
+  private async _previewFile(
+    filePath: string,
+    signal?: AbortSignal
+  ): Promise<ToolCallResult> {
     if (!filePath) {
       return {
         content: [
@@ -60,7 +64,10 @@ export class FileServer extends McpServer {
 
     const result = await spawnPython(
       resolveScript("analysis_engine/preview_file.py"),
-      [filePath]
+      [filePath],
+      undefined,
+      undefined,
+      signal
     );
 
     if (!result.success) {

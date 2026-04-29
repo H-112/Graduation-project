@@ -13,6 +13,7 @@ from collections import Counter
 from openai import OpenAI
 from utils import progress, validate_path, sanitize_prompt_text
 from env_loader import load_env
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 load_env()
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
@@ -36,6 +37,10 @@ def get_client():
     if not DEEPSEEK_API_KEY:
         sys.exit("错误: 未设置 DEEPSEEK_API_KEY")
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 # ── 加载与采样 ───────────────────────────────
 
@@ -187,7 +192,7 @@ def main():
         progress(f"分析批次 {batch_idx + 1}/{len(batches)} ({len(batch_headers)} 列)...")
 
         try:
-            response = client.chat.completions.create(
+            response = _call_llm_with_retry(client,
                 model="deepseek-chat",
                 messages=[
                     {

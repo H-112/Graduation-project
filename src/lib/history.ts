@@ -3,8 +3,9 @@
 // 存储在 data/history.json，按时间倒序
 // ============================================
 
-import { readFile, writeFile, mkdir } from "fs/promises";
+import { readFile, writeFile, mkdir, rename } from "fs/promises";
 import path from "path";
+import { Mutex } from "async-mutex";
 
 export interface HistoryRecord {
   id: string;
@@ -55,6 +56,9 @@ export interface HistoryRecord {
 
 const HISTORY_FILE = path.join(process.cwd(), "data", "history.json");
 
+/** 文件级互斥锁，防止并发读写 history.json 导致数据损坏 */
+const historyMutex = new Mutex();
+
 async function ensureFile(): Promise<void> {
   await mkdir(path.dirname(HISTORY_FILE), { recursive: true });
   try {
@@ -75,8 +79,12 @@ export async function readHistory(): Promise<HistoryRecord[]> {
 }
 
 async function writeHistory(records: HistoryRecord[]): Promise<void> {
-  await ensureFile();
-  await writeFile(HISTORY_FILE, JSON.stringify(records, null, 2));
+  await historyMutex.runExclusive(async () => {
+    await ensureFile();
+    const tmpFile = HISTORY_FILE + ".tmp";
+    await writeFile(tmpFile, JSON.stringify(records, null, 2));
+    await rename(tmpFile, HISTORY_FILE); // 原子重命名
+  });
 }
 
 /** 添加上传记录 */
@@ -160,7 +168,67 @@ export async function addAnalysisRecord(params: {
   }
 
   await writeHistory(records);
+
+  // 异步清理旧文件（不阻塞返回）
+  cleanupOldFiles(records).catch(() => {});
+
   return record;
+}
+
+/** 清理旧的结果文件，防止磁盘无限增长 */
+const MAX_HISTORY_RECORDS = 50; // 最多保留 50 条历史记录
+const FILES_TO_CLEAN = [
+  "resultUrl",
+  "deepReportUrl",
+  "theoryMappingUrl",
+  "actionableInsightsUrl",
+  "researchGapsUrl",
+  "causalHintsUrl",
+  "sampleBiasUrl",
+] as const;
+
+async function cleanupOldFiles(records: HistoryRecord[]): Promise<void> {
+  if (records.length <= MAX_HISTORY_RECORDS) return;
+
+  const { unlink } = await import("fs/promises");
+  const toDelete = records.slice(MAX_HISTORY_RECORDS);
+
+  for (const record of toDelete) {
+    // 删除关联的上传文件
+    if (record.filePath) {
+      try { await unlink(record.filePath); } catch { /* ignore */ }
+    }
+
+    // 删除 public 目录下的结果文件
+    for (const key of FILES_TO_CLEAN) {
+      const url = record[key as keyof HistoryRecord] as string | undefined;
+      if (!url) continue;
+      try {
+        const filePath = path.join(process.cwd(), "public", url);
+        await unlink(filePath);
+      } catch { /* ignore */ }
+    }
+
+    // 删除 LLM 报告文件
+    if (record.llmReports) {
+      for (const file of record.llmReports) {
+        try {
+          await unlink(path.join(process.cwd(), "public", "llm-reports", file));
+        } catch { /* ignore */ }
+      }
+    }
+    if (record.likertReports) {
+      for (const file of record.likertReports) {
+        try {
+          await unlink(path.join(process.cwd(), "public", "llm-reports", file));
+        } catch { /* ignore */ }
+      }
+    }
+  }
+
+  // 截断历史记录
+  const trimmed = records.slice(0, MAX_HISTORY_RECORDS);
+  await writeHistory(trimmed);
 }
 
 /** 获取分析历史（仅 type=analysis，按时间倒序） */

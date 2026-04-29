@@ -19,6 +19,8 @@ try:
 except ImportError:
     OpenAI = None
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 try:
     from scipy import stats
     from scipy.stats import chi2_contingency
@@ -52,6 +54,10 @@ def get_llm_client():
     if not DEEPSEEK_API_KEY or not OpenAI:
         return None
     return OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10), reraise=True)
+def _call_llm_with_retry(client, **kwargs):
+    return client.chat.completions.create(**kwargs)
 
 
 def load_json(path: str) -> dict:
@@ -208,7 +214,7 @@ def synthesize_assessment(client, bias_list: list, data: dict) -> dict:
 - low: 偏差可控，结论在类似群体中有较好推广性"""
 
     try:
-        response = client.chat.completions.create(
+        response = _call_llm_with_retry(client,
             model="deepseek-chat",
             messages=[
                 {"role": "system", "content": "你是抽样方法论专家。只输出JSON，不输出任何其他文字。"},

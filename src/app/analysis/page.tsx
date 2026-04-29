@@ -3,36 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BarChart3, Sparkles, Search, ArrowRight, Loader2, AlertCircle, Clock, CheckCircle, XCircle } from "lucide-react";
-
-interface HistoryRecord {
-  id: string;
-  type: "upload" | "analysis";
-  datasetName: string;
-  resultUrl?: string;
-  deepReportUrl?: string;
-  llmReports?: string[];
-  likertReports?: string[];
-  theoryMappingUrl?: string;
-  actionableInsightsUrl?: string;
-  researchGapsUrl?: string;
-  causalHintsUrl?: string;
-  sampleBiasUrl?: string;
-  mode?: "quick_overview" | "ai_insights" | "deep_research";
-  status: "completed" | "failed" | "pending";
-  summary?: {
-    records?: number;
-    fields?: number;
-  };
-  error?: string;
-  duration_ms?: number;
-  apiCalls?: number;
-  tokenUsage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  timestamp: string;
-}
+import type { HistoryRecord } from "@/lib/history";
 
 const modeLabel = (mode?: string) => {
   switch (mode) {

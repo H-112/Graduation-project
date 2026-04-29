@@ -25,6 +25,11 @@ import { AnalysisContext } from "./AnalysisContext";
 import { ProgressEmitter } from "./ProgressEmitter";
 import { PipelineExecutor } from "./PipelineExecutor";
 import type { SkillInput } from "./types";
+import {
+  computeFileHash,
+  getCachedAnalysis,
+  setCachedAnalysis,
+} from "../cache";
 
 export class AnalysisOrchestrator {
   private registry: SkillRegistry;
@@ -57,7 +62,8 @@ export class AnalysisOrchestrator {
     filePath: string,
     mode: AnalysisMode,
     datasetName?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    force: boolean = false
   ): Promise<Response> {
     // 延迟初始化
     if (!this.initialized) {
@@ -76,8 +82,57 @@ export class AnalysisOrchestrator {
 
     const analysisId = crypto.randomBytes(6).toString("hex");
 
+    // 计算文件哈希（用于缓存检查和后续写入）
+    const fileHash = await computeFileHash(filePath);
+
+    // ── 缓存检查（force=true 时跳过缓存，强制重新分析）──
+    if (!force) {
+      const cached = await getCachedAnalysis(fileHash, mode);
+      if (cached) {
+        // 缓存命中：直接返回 SSE 结果（复用已有分析）
+        return new Response(
+          new ReadableStream({
+            start: async (controller) => {
+              const emitter = new ProgressEmitter(controller);
+              emitter.progress("缓存命中，直接返回已有分析结果", "cache");
+              emitter.result({
+                id: analysisId,
+                mode,
+                resultPath: "",
+                resultUrl: cached.resultUrl || "",
+                cleaning: {},
+                summary: cached.summary || {},
+                ...(cached.llmReports?.length ? { llmReports: cached.llmReports.map((f) => ({ file: f, url: `/llm-reports/${encodeURIComponent(f)}` })) } : {}),
+                ...(cached.likertReports?.length ? { likertReports: cached.likertReports.map((f) => ({ file: f, url: `/llm-reports/${encodeURIComponent(f)}` })) } : {}),
+                ...(cached.deepReportUrl ? { deepResearchReport: cached.deepReportUrl } : {}),
+                ...(cached.theoryMappingUrl ? { theoryMapping: cached.theoryMappingUrl } : {}),
+                ...(cached.actionableInsightsUrl ? { actionableInsights: cached.actionableInsightsUrl } : {}),
+                ...(cached.researchGapsUrl ? { researchGaps: cached.researchGapsUrl } : {}),
+                ...(cached.causalHintsUrl ? { causalHints: cached.causalHintsUrl } : {}),
+                ...(cached.sampleBiasUrl ? { sampleBias: cached.sampleBiasUrl } : {}),
+                ...(cached.tokenUsage ? { tokenUsage: cached.tokenUsage } : {}),
+              });
+              emitter.done();
+              controller.close();
+            },
+          }),
+          {
+            headers: {
+              "Content-Type": "text/event-stream",
+              "Cache-Control": "no-cache, no-transform",
+              Connection: "keep-alive",
+              "X-Accel-Buffering": "no",
+              "X-Cache": "HIT",
+            },
+          }
+        );
+      }
+    }
+
     // SSE 最大连接时长（15 分钟）
     const SSE_MAX_DURATION_MS = 15 * 60 * 1000;
+
+    const abortController = new AbortController();
 
     const stream = new ReadableStream({
       start: async (controller) => {
@@ -118,7 +173,7 @@ export class AnalysisOrchestrator {
             emitter
           );
 
-          const results = await executor.run(mode, input);
+          const results = await executor.run(mode, input, abortController.signal);
 
           // 检查是否有成功的 DescriptiveAnalysis
           const descResult = results.find(
@@ -265,6 +320,28 @@ export class AnalysisOrchestrator {
             },
           });
 
+          // 写入缓存（基于文件哈希 + 分析模式）
+          await setCachedAnalysis(fileHash, mode, {
+            resultUrl: resultUrl || undefined,
+            deepReportUrl: deepResearchReportUrl || undefined,
+            llmReports: llmReports?.map((r) => r.file),
+            likertReports: likertReportsRaw?.map((r) => r.file),
+            theoryMappingUrl: theoryMappingUrl || undefined,
+            actionableInsightsUrl: actionableInsightsUrl || undefined,
+            researchGapsUrl: researchGapsUrl || undefined,
+            causalHintsUrl: causalHintsUrl || undefined,
+            sampleBiasUrl: sampleBiasUrl || undefined,
+            summary: {
+              records: total_records,
+              fields: total_fields,
+              demographics: Object.keys(demographics || {}).length,
+              usageItems: Object.keys(genai_usage || {}).length,
+              likertGroups: Object.keys(likert_scales || {}).length,
+              textFields: Object.keys(text_analysis || {}).length,
+            },
+            tokenUsage,
+          });
+
           emitter.result({
             id: analysisId,
             mode,
@@ -319,6 +396,7 @@ export class AnalysisOrchestrator {
       cancel() {
         // ReadableStream cancel — 客户端 disconnected
         console.log(`[AnalysisOrchestrator] Client disconnected for analysis ${analysisId}`);
+        abortController.abort("客户端断开连接");
       },
     });
 
