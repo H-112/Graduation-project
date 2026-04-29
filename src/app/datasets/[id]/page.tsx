@@ -4,22 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { loadAnalysisData, getDatasetMeta, type DatasetMeta } from "@/lib/data";
 import type { QuickOverviewResult } from "@/lib/types";
-import { SummaryCards } from "@/components/analysis/SummaryCards";
-import { DemographicsPanel } from "@/components/analysis/DemographicsPanel";
-import { UsagePanel } from "@/components/analysis/UsagePanel";
-import { LikertPanel } from "@/components/analysis/LikertPanel";
-import { KeywordsPanel } from "@/components/analysis/KeywordsPanel";
+import { StandardReport } from "@/components/analysis/StandardReport";
+import { Loader2 } from "lucide-react";
+import { type TheoryMappingData } from "@/components/analysis/TheoryMappingPanel";
+import { type ActionableInsightData } from "@/components/analysis/ActionableInsightPanel";
+import { type ResearchGapData } from "@/components/analysis/ResearchGapPanel";
+import { type CausalInferenceData } from "@/components/analysis/CausalInferencePanel";
+import { type SampleBiasData } from "@/components/analysis/SampleBiasPanel";
 import { LLM_REPORTS } from "@/components/analysis/LlmInsightsPanel";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
-import { DataQualityPanel } from "@/components/analysis/DataQualityPanel";
-import { StructureMetaPanel } from "@/components/analysis/StructureMetaPanel";
-import { TableOfContents } from "@/components/analysis/TableOfContents";
-import { Loader2, Printer } from "lucide-react";
-import { TheoryMappingPanel, type TheoryMappingData } from "@/components/analysis/TheoryMappingPanel";
-import { ActionableInsightPanel, type ActionableInsightData } from "@/components/analysis/ActionableInsightPanel";
-import { ResearchGapPanel, type ResearchGapData } from "@/components/analysis/ResearchGapPanel";
-import { CausalInferencePanel, type CausalInferenceData } from "@/components/analysis/CausalInferencePanel";
-import { SampleBiasPanel, type SampleBiasData } from "@/components/analysis/SampleBiasPanel";
 
 export default function DatasetDetailPage() {
   const params = useParams();
@@ -119,49 +111,13 @@ export default function DatasetDetailPage() {
     return () => controller.abort();
   }, [id]);
 
-  const hasDemographics = data?.demographics && Object.keys(data.demographics).length > 0;
-  const hasUsage = data?.genai_usage && Object.keys(data.genai_usage).length > 0;
-  const hasLikert = data?.likert_scales && Object.keys(data.likert_scales).length > 0;
-  const hasText = data?.text_analysis && Object.keys(data.text_analysis).length > 0;
-  // 分离逐题洞察（内联到文本分析后面）和综合报告（独立章节）
   const llmAllReports = LLM_REPORTS[id] || [];
   const inlineTextLlmReports = llmAllReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
   const comprehensiveLlmReport = llmAllReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
-  const hasInlineTextLlm = inlineTextLlmReports.length > 0;
   const hasComprehensiveLlm = !!comprehensiveLlmReport;
-  const hasQuality = data?.quality_metrics && data.quality_metrics.per_question.length > 0;
-  const hasStructureMeta = data?.structure_meta && data.structure_meta.length > 0;
-  const hasTheory = !!theoryData;
-  const hasActionable = !!actionableData;
-  const hasGap = !!gapData;
-  const hasCausal = !!causalData;
-  const hasBias = !!biasData;
-
-  const tocGroups = [
-    {
-      label: "分析",
-      items: [
-        { id: "overview", label: "数据概览", available: !!data },
-        { id: "quality", label: "数据质量", available: !!hasQuality },
-        { id: "demographics", label: "样本构成", available: !!hasDemographics },
-        { id: "usage", label: "选择题统计", available: !!hasUsage },
-        { id: "likert", label: "量表分析", available: !!hasLikert },
-        { id: "text", label: "文本分析", available: !!hasText || !!hasInlineTextLlm },
-        { id: "comprehensive", label: "综合洞察", available: !!hasComprehensiveLlm },
-        { id: "structure", label: "识别详情", available: !!hasStructureMeta },
-      ],
-    },
-    {
-      label: "深度研究",
-      items: [
-        { id: "actionable", label: "可操作建议", available: !!hasActionable },
-        { id: "causal", label: "因果推断", available: !!hasCausal },
-        { id: "gap", label: "研究缺口", available: !!hasGap },
-        { id: "bias", label: "样本偏差", available: !!hasBias },
-        { id: "theory", label: "理论映射", available: !!hasTheory },
-      ],
-    },
-  ];
+  const hasInlineTextLlm = inlineTextLlmReports.length > 0;
+  // 如果数据集有 LLM 报告，则以 mode2 渲染，否则 mode1
+  const reportMode = hasComprehensiveLlm || hasInlineTextLlm ? "mode2" : "mode1";
 
   if (loading) {
     return (
@@ -189,199 +145,17 @@ export default function DatasetDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-8 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main content */}
-        <div className="flex-1 min-w-0 space-y-12">
-          {/* Header */}
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{meta.title}</h2>
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                <span>样本: {meta.records} 份</span>
-                <span>·</span>
-                <span>字段: {meta.fields} 列</span>
-                <span>·</span>
-                <span>{meta.source}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => window.print()}
-              className="no-print inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              导出 PDF
-            </button>
-          </div>
-
-          {/* Overview */}
-          <section id="overview">
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-              数据概览
-            </h3>
-            <SummaryCards data={data} />
-          </section>
-
-          {/* Data Quality */}
-          {hasQuality && (
-            <section id="quality">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                数据质量
-              </h3>
-              <DataQualityPanel metrics={data.quality_metrics} cleaning={data.cleaning} />
-            </section>
-          )}
-
-          {/* Demographics */}
-          {hasDemographics && (
-            <section id="demographics">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                样本构成（人口学分析）
-              </h3>
-              <DemographicsPanel demographics={data.demographics || {}} />
-            </section>
-          )}
-
-          {/* Usage */}
-          {hasUsage && (
-            <section id="usage">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                选择题统计
-              </h3>
-              <UsagePanel usage={data.genai_usage || {}} />
-            </section>
-          )}
-
-          {/* Likert */}
-          {hasLikert && (
-            <section id="likert">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                Likert 量表分析
-              </h3>
-              <LikertPanel likert={data.likert_scales || {}} />
-            </section>
-          )}
-
-          {/* Text */}
-          {(hasText || hasInlineTextLlm) && (
-            <section id="text">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                开放题文本分析
-              </h3>
-              {hasText && <KeywordsPanel textAnalysis={data.text_analysis || {}} />}
-              {hasInlineTextLlm && (
-                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-5">
-                  <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400">
-                    LLM 逐题深度解读
-                  </h4>
-                  {inlineTextLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-4 h-4 animate-spin text-purple-500 mr-2" />
-                      <span className="text-sm text-gray-500 dark:text-gray-400">加载文本洞察...</span>
-                    </div>
-                  ) : (
-                    inlineTextContents.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none"
-                      >
-                        <h5 className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3">
-                          {item.label}
-                        </h5>
-                        <MarkdownRenderer content={item.content} />
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Comprehensive LLM Report */}
-          {hasComprehensiveLlm && (
-            <section id="comprehensive">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                AI 综合洞察
-              </h3>
-              {comprehensiveLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-                  <span className="text-sm text-gray-500 dark:text-gray-400">加载综合报告...</span>
-                </div>
-              ) : (
-                <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-6 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none">
-                  <h4 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-4">
-                    {comprehensiveLlmReport?.label || "综合洞察报告"}
-                  </h4>
-                  <MarkdownRenderer content={comprehensiveContent} />
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Structure Meta */}
-          {hasStructureMeta && (
-            <section id="structure">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                题型识别详情
-              </h3>
-              <StructureMetaPanel meta={data.structure_meta} />
-            </section>
-          )}
-
-          {/* Actionable Insights */}
-          {hasActionable && (
-            <section id="actionable">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                可操作建议
-              </h3>
-              <ActionableInsightPanel data={actionableData} />
-            </section>
-          )}
-
-          {/* Causal Inference */}
-          {hasCausal && (
-            <section id="causal">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                因果推断提示
-              </h3>
-              <CausalInferencePanel data={causalData} />
-            </section>
-          )}
-
-          {/* Research Gap */}
-          {hasGap && (
-            <section id="gap">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                研究缺口
-              </h3>
-              <ResearchGapPanel data={gapData} />
-            </section>
-          )}
-
-          {/* Sample Bias */}
-          {hasBias && (
-            <section id="bias">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                样本偏差诊断
-              </h3>
-              <SampleBiasPanel data={biasData} />
-            </section>
-          )}
-
-          {/* Theory Mapping */}
-          {hasTheory && (
-            <section id="theory">
-              <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-100 dark:border-gray-700">
-                理论映射
-              </h3>
-              <TheoryMappingPanel data={theoryData} />
-            </section>
-          )}
-        </div>
-
-        {/* Table of Contents */}
-        <TableOfContents groups={tocGroups} />
-      </div>
+      <StandardReport
+        mode={reportMode}
+        data={data}
+        inlineTextContents={inlineTextContents}
+        comprehensiveContent={comprehensiveContent}
+        theoryData={theoryData}
+        actionableData={actionableData}
+        gapData={gapData}
+        causalData={causalData}
+        biasData={biasData}
+      />
     </div>
   );
 }

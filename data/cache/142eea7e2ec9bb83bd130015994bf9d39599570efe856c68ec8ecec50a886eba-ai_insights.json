@@ -1,0 +1,28 @@
+{
+  "fileHash": "142eea7e2ec9bb83bd130015994bf9d39599570efe856c68ec8ecec50a886eba",
+  "mode": "ai_insights",
+  "timestamp": "2026-04-29T11:45:33.728Z",
+  "resultUrl": "/data/results/959c6a283c07_analysis.json",
+  "llmReports": [
+    "959c6a283c07_llm_01.md",
+    "959c6a283c07_llm_02.md",
+    "959c6a283c07_comprehensive.md"
+  ],
+  "likertReports": [
+    "959c6a283c07_likert_analysis.json",
+    "959c6a283c07_likert_analysis.md"
+  ],
+  "summary": {
+    "records": 63,
+    "fields": 26,
+    "demographics": 2,
+    "usageItems": 2,
+    "likertGroups": 2,
+    "textFields": 2
+  },
+  "tokenUsage": {
+    "prompt_tokens": 6388,
+    "completion_tokens": 5242,
+    "total_tokens": 11630
+  }
+}

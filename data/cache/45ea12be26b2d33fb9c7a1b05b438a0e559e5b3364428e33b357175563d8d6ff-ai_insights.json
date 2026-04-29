@@ -1,0 +1,19 @@
+{
+  "fileHash": "45ea12be26b2d33fb9c7a1b05b438a0e559e5b3364428e33b357175563d8d6ff",
+  "mode": "ai_insights",
+  "timestamp": "2026-04-29T13:40:58.932Z",
+  "resultUrl": "/data/results/76bf2824bd19_analysis.json",
+  "summary": {
+    "records": 39,
+    "fields": 25,
+    "demographics": 0,
+    "usageItems": 10,
+    "likertGroups": 0,
+    "textFields": 0
+  },
+  "tokenUsage": {
+    "prompt_tokens": 2160,
+    "completion_tokens": 620,
+    "total_tokens": 2780
+  }
+}

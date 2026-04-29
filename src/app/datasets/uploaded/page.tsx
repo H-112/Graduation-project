@@ -3,56 +3,16 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import type { QuickOverviewResult } from "@/lib/types";
-import { SummaryCards } from "@/components/analysis/SummaryCards";
-import { DemographicsPanel } from "@/components/analysis/DemographicsPanel";
-import { UsagePanel } from "@/components/analysis/UsagePanel";
-import { LikertPanel } from "@/components/analysis/LikertPanel";
-import { KeywordsPanel } from "@/components/analysis/KeywordsPanel";
-import { LikertLlmPanel } from "@/components/analysis/LikertLlmPanel";
-import { CrossAnalysisPanel } from "@/components/analysis/CrossAnalysisPanel";
-import { DataQualityPanel } from "@/components/analysis/DataQualityPanel";
-import { StructureMetaPanel } from "@/components/analysis/StructureMetaPanel";
-import { TableOfContents, type TocGroup } from "@/components/analysis/TableOfContents";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TheoryMappingPanel, type TheoryMappingData } from "@/components/analysis/TheoryMappingPanel";
 import { ActionableInsightPanel, type ActionableInsightData } from "@/components/analysis/ActionableInsightPanel";
 import { ResearchGapPanel, type ResearchGapData } from "@/components/analysis/ResearchGapPanel";
 import { CausalInferencePanel, type CausalInferenceData } from "@/components/analysis/CausalInferencePanel";
 import { SampleBiasPanel, type SampleBiasData } from "@/components/analysis/SampleBiasPanel";
 import { ResearchReport } from "@/components/analysis/ResearchReport";
-import { Loader2, AlertCircle, Printer } from "lucide-react";
+import { StandardReport } from "@/components/analysis/StandardReport";
+import { UsagePanel } from "@/components/analysis/UsagePanel";
+import { Loader2, AlertCircle } from "lucide-react";
 import type { HistoryRecord } from "@/lib/history";
-
-function ChapterSection({
-  id,
-  title,
-  children,
-}: {
-  id: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-gray-200 dark:from-gray-700 to-transparent" />
-        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider whitespace-nowrap">
-          {title}
-        </h3>
-        <div className="h-px flex-1 bg-gradient-to-l from-gray-200 dark:from-gray-700 to-transparent" />
-      </div>
-      <div className="space-y-10">{children}</div>
-    </section>
-  );
-}
-
-function PanelHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">
-      {children}
-    </h4>
-  );
-}
 
 function UploadedResultContent() {
   const searchParams = useSearchParams();
@@ -70,6 +30,7 @@ function UploadedResultContent() {
   const [biasUrl, setBiasUrl] = useState(searchParams.get("bias") || "");
 
   const [data, setData] = useState<QuickOverviewResult | null>(null);
+
   const [deepReport, setDeepReport] = useState("");
   const [likertJson, setLikertJson] = useState<Record<string, unknown> | null>(null);
   const [theoryData, setTheoryData] = useState<TheoryMappingData | null>(null);
@@ -166,12 +127,14 @@ function UploadedResultContent() {
 
     if (resultUrl && !resultUrl.endsWith(".md")) {
       promises.push(
-        fetch(resultUrl, { signal: controller.signal })
+        fetch(resultUrl, { signal: controller.signal, cache: "no-store" })
           .then(r => {
             if (!r.ok) throw new Error("加载失败");
             return r.json();
           })
-          .then(setData)
+          .then((json) => {
+            setData(json);
+          })
           .catch(e => {
             if ((e as Error).name === "AbortError") return;
             console.error("JSON fetch error:", e);
@@ -289,49 +252,6 @@ function UploadedResultContent() {
     return () => controller.abort();
   }, [theoryUrl, actionableUrl, gapUrl, causalUrl, biasUrl]);
 
-  const tocGroups: TocGroup[] = [
-    {
-      label: "数据基础",
-      items: [
-        { id: "overview", label: "数据概览", available: !!hasJsonData },
-        { id: "quality", label: "数据质量", available: !!hasQuality },
-        { id: "structure", label: "识别详情", available: !!hasStructureMeta },
-      ],
-    },
-    {
-      label: "描述统计",
-      items: [
-        { id: "demographics", label: "样本构成", available: !!hasDemographics },
-        { id: "usage", label: "选择题统计", available: !!hasUsage },
-        { id: "likert", label: "量表分析", available: !!hasLikert || !!hasLikertLlm },
-        { id: "text", label: "文本分析", available: !!hasText || !!hasInlineTextLlm },
-        { id: "cross", label: "交叉分析", available: !!hasCrossAnalysis },
-      ],
-    },
-    {
-      label: "AI 洞察",
-      items: [
-        { id: "comprehensive", label: "综合洞察报告", available: !!hasComprehensiveReport },
-      ],
-    },
-    {
-      label: "深度研究",
-      items: [
-        { id: "deep", label: "深度研究报告", available: !!hasDeepReport },
-      ],
-    },
-    {
-      label: "扩展洞察",
-      items: [
-        { id: "actionable", label: "可操作建议", available: !!hasActionable },
-        { id: "causal", label: "因果推断", available: !!hasCausal },
-        { id: "gap", label: "研究缺口", available: !!hasGap },
-        { id: "bias", label: "样本偏差", available: !!hasBias },
-        { id: "theory", label: "理论映射", available: !!hasTheory },
-      ],
-    },
-  ];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -361,6 +281,12 @@ function UploadedResultContent() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
+      {/* DEBUG */}
+      {data && (
+        <div className="bg-yellow-100 p-2 mb-2 text-xs text-yellow-800 rounded">
+          DEBUG page: data keys={Object.keys(data).join(', ')} | has genai_usage={'genai_usage' in data} | genai_usage keys={Object.keys(data.genai_usage || {}).length}
+        </div>
+      )}
       {/* Mode 3: 研究报告布局 */}
       {analysisMode === "deep_research" && data ? (
         <ResearchReport
@@ -375,211 +301,26 @@ function UploadedResultContent() {
           causalData={causalData}
           biasData={biasData}
         />
-      ) : (
+      ) : data ? (
         <>
-      {/* Main content */}
-      <div className="flex-1 min-w-0 space-y-14">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{data?.dataset || "分析结果"}</h2>
-            {data && (
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
-                <span>样本: {data.total_records} 份</span>
-                <span>·</span>
-                <span>字段: {data.total_fields} 列</span>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => window.print()}
-            className="no-print inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            导出 PDF
-          </button>
+          <StandardReport
+            mode={analysisMode === "ai_insights" ? "mode2" : "mode1"}
+            data={data}
+            likertLlmData={likertJson as unknown as import("@/components/analysis/LikertLlmPanel").LikertLlmData | null}
+            inlineTextContents={inlineTextContents}
+            comprehensiveContent={llmContents[llmReports.findIndex(r => r.file.toLowerCase().includes("comprehensive"))] || ""}
+            theoryData={theoryData}
+            actionableData={actionableData}
+            gapData={gapData}
+            causalData={causalData}
+            biasData={biasData}
+          />
+        </>
+      ) : (
+        <div className="flex items-center justify-center py-20">
+          <span className="text-gray-500 dark:text-gray-400">未找到分析数据</span>
         </div>
-
-        {/* Chapter 1: 数据基础 */}
-        {(hasJsonData || hasQuality || hasStructureMeta) && (
-          <ChapterSection id="data-foundation" title="数据基础">
-            {data && (
-              <div id="overview">
-                <PanelHeading>数据概览</PanelHeading>
-                <SummaryCards data={data} />
-              </div>
-            )}
-            {hasQuality && data && (
-              <div id="quality">
-                <PanelHeading>数据质量</PanelHeading>
-                <DataQualityPanel metrics={data.quality_metrics} cleaning={data.cleaning} />
-              </div>
-            )}
-            {hasStructureMeta && (
-              <div id="structure">
-                <PanelHeading>题型识别详情</PanelHeading>
-                <StructureMetaPanel meta={data.structure_meta} />
-              </div>
-            )}
-          </ChapterSection>
-        )}
-
-        {/* Chapter 2: 描述统计 */}
-        {(hasDemographics || hasUsage || hasLikert || hasLikertLlm || hasText || hasInlineTextLlm || hasCrossAnalysis) && (
-          <ChapterSection id="descriptive-stats" title="描述统计">
-            {hasDemographics && data && (
-              <div id="demographics">
-                <PanelHeading>样本构成（人口学分析）</PanelHeading>
-                <DemographicsPanel demographics={data.demographics} />
-              </div>
-            )}
-            {hasUsage && data && (
-              <div id="usage">
-                <PanelHeading>选择题统计</PanelHeading>
-                <UsagePanel usage={data.genai_usage!} />
-              </div>
-            )}
-            {(hasLikert || hasLikertLlm) && data && (
-              <div id="likert">
-                <PanelHeading>量表分析</PanelHeading>
-                {hasLikert && <LikertPanel likert={data.likert_scales || {}} />}
-                {hasLikertLlm && (
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h5 className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-4">
-                      LLM 深度解读
-                    </h5>
-                    <LikertLlmPanel data={likertJson as unknown as import("@/components/analysis/LikertLlmPanel").LikertLlmData | null} />
-                  </div>
-                )}
-              </div>
-            )}
-            {(hasText || hasInlineTextLlm) && data && (
-              <div id="text">
-                <PanelHeading>开放题文本分析</PanelHeading>
-                {hasText && <KeywordsPanel textAnalysis={data.text_analysis || {}} />}
-                {hasInlineTextLlm && (
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-5">
-                    <h5 className="text-sm font-semibold text-purple-700 dark:text-purple-400">
-                      LLM 逐题深度解读
-                    </h5>
-                    {inlineTextLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="w-4 h-4 animate-spin text-purple-500 mr-2" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">加载文本洞察...</span>
-                      </div>
-                    ) : (
-                      inlineTextContents.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-5 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none"
-                        >
-                          <h6 className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-3">
-                            {item.label}
-                          </h6>
-                          <MarkdownRenderer content={item.content} />
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            {hasCrossAnalysis && data && (
-              <div id="cross">
-                <PanelHeading>交叉分析</PanelHeading>
-                <CrossAnalysisPanel crossAnalysis={data.cross_analysis || []} />
-              </div>
-            )}
-          </ChapterSection>
-        )}
-
-        {/* Chapter 3: AI 综合洞察 */}
-        {hasComprehensiveReport && (
-          <ChapterSection id="ai-insights" title="AI 综合洞察">
-            <div id="comprehensive">
-              <PanelHeading>综合洞察报告</PanelHeading>
-              {llmLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-                  <span className="text-sm text-gray-500 dark:text-gray-400">加载综合报告...</span>
-                </div>
-              ) : (
-                <div className="bg-purple-50/50 dark:bg-purple-950/20 rounded-xl p-6 border border-purple-100 dark:border-purple-900/50 prose prose-sm max-w-none">
-                  <MarkdownRenderer content={llmContents[llmReports.indexOf(comprehensiveReport!)] || ""} />
-                </div>
-              )}
-            </div>
-          </ChapterSection>
-        )}
-
-        {/* Chapter 4: 深度研究 */}
-        {hasDeepReport && (
-          <ChapterSection id="deep-research" title="深度研究">
-            <div id="deep">
-              <PanelHeading>深度研究报告</PanelHeading>
-              <DeepResearchPanel content={deepReport} />
-            </div>
-          </ChapterSection>
-        )}
-
-        {/* Chapter 5: 扩展洞察 */}
-        {(hasActionable || hasCausal || hasGap || hasBias || hasTheory) && (
-          <ChapterSection id="extended-insights" title="扩展洞察">
-            {hasActionable && (
-              <div id="actionable">
-                <PanelHeading>可操作建议</PanelHeading>
-                <ActionableInsightPanel data={actionableData} />
-              </div>
-            )}
-            {hasCausal && (
-              <div id="causal">
-                <PanelHeading>因果推断提示</PanelHeading>
-                <CausalInferencePanel data={causalData} />
-              </div>
-            )}
-            {hasGap && (
-              <div id="gap">
-                <PanelHeading>研究缺口</PanelHeading>
-                <ResearchGapPanel data={gapData} />
-              </div>
-            )}
-            {hasBias && (
-              <div id="bias">
-                <PanelHeading>样本偏差诊断</PanelHeading>
-                <SampleBiasPanel data={biasData} />
-              </div>
-            )}
-            {hasTheory && (
-              <div id="theory">
-                <PanelHeading>理论映射</PanelHeading>
-                <TheoryMappingPanel data={theoryData} />
-              </div>
-            )}
-          </ChapterSection>
-        )}
-      </div>
-
-      {/* Table of Contents */}
-      <TableOfContents groups={tocGroups} />
-      </>
       )}
-    </div>
-  );
-}
-
-function DeepResearchPanel({ content }: { content: string }) {
-  if (!content) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-5 h-5 animate-spin text-amber-500 mr-2" />
-        <span className="text-sm text-gray-500 dark:text-gray-400">加载深度研究报告...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
-      <MarkdownRenderer content={content} />
     </div>
   );
 }
