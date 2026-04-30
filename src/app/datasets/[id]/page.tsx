@@ -91,10 +91,14 @@ export default function DatasetDetailPage() {
       fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
         .then((res) => (res.ok ? res.text() : `*加载失败*`))
         .then((content) => ({ label: r.label, content }))
-        .catch(() => ({ label: r.label, content: "*加载失败*" }))
+        .catch((e) => {
+          if ((e as Error).name === "AbortError") return { label: r.label, content: "*加载失败*" };
+          return { label: r.label, content: "*加载失败*" };
+        })
     );
     Promise.all(fetchers)
-      .then((results) => setInlineTextContents(results));
+      .then((results) => setInlineTextContents(results))
+      .catch(() => {});
     return () => controller.abort();
   }, [inlineTextLlmReports]);
 
@@ -104,7 +108,11 @@ export default function DatasetDetailPage() {
     const controller = new AbortController();
     fetch(`/llm-reports/${encodeURIComponent(comprehensiveLlmReport.file)}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.text() : ""))
-      .then(setComprehensiveContent);
+      .then(setComprehensiveContent)
+      .catch((e) => {
+        if ((e as Error).name === "AbortError") return;
+        console.error("Comprehensive report fetch error:", e);
+      });
     return () => controller.abort();
   }, [comprehensiveLlmReport]);
 
