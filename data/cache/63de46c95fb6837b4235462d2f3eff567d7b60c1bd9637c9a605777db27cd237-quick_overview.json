@@ -1,0 +1,14 @@
+{
+  "fileHash": "63de46c95fb6837b4235462d2f3eff567d7b60c1bd9637c9a605777db27cd237",
+  "mode": "quick_overview",
+  "timestamp": "2026-04-30T03:40:02.289Z",
+  "resultUrl": "/data/results/f697b5825b20_analysis.json",
+  "summary": {
+    "records": 694,
+    "fields": 149,
+    "demographics": 8,
+    "usageItems": 9,
+    "likertGroups": 3,
+    "textFields": 1
+  }
+}

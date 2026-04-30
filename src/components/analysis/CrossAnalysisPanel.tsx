@@ -63,7 +63,7 @@ function CrossCard({ item, index }: { item: CrossAnalysisResult; index: number }
           <span>样本: {item.sample_size}</span>
           <span>χ² = {item.chi2}</span>
           <span>p = {item.p_value}</span>
-          <span>Cramér's V = {item.cramers_v}</span>
+          <span>Cram&eacute;r&apos;s V = {item.cramers_v}</span>
         </div>
       </div>
 

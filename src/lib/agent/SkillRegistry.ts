@@ -149,7 +149,7 @@ export class SkillRegistry {
 
   // ── YAML frontmatter 解析 ──
 
-  private _parse(content: string, filename: string): SkillDefinition {
+  private _parse(content: string, _filename: string): SkillDefinition {
     const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
     if (!match) {
       throw new Error(`No valid YAML frontmatter found`);

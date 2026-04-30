@@ -1,0 +1,35 @@
+{
+  "fileHash": "6c71e1d5e8dab9298171bdb789925a3be69afa8133dc6e51d38c5baec7105e13",
+  "mode": "deep_research",
+  "timestamp": "2026-04-29T16:12:56.315Z",
+  "resultUrl": "/data/results/eead6a99ee48_analysis.json",
+  "deepReportUrl": "/data/results/eead6a99ee48_deep_research.md",
+  "llmReports": [
+    "eead6a99ee48_llm_01.md",
+    "eead6a99ee48_llm_02.md",
+    "eead6a99ee48_llm_03.md",
+    "eead6a99ee48_comprehensive.md"
+  ],
+  "likertReports": [
+    "eead6a99ee48_likert_analysis.json",
+    "eead6a99ee48_likert_analysis.md"
+  ],
+  "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+  "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+  "researchGapsUrl": "/data/results/gap_research_gap.json",
+  "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+  "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+  "summary": {
+    "records": 2246,
+    "fields": 75,
+    "demographics": 6,
+    "usageItems": 11,
+    "likertGroups": 5,
+    "textFields": 3
+  },
+  "tokenUsage": {
+    "prompt_tokens": 37869,
+    "completion_tokens": 19809,
+    "total_tokens": 57678
+  }
+}

@@ -7,12 +7,12 @@ import { AnalysisContext } from "@/lib/agent/AnalysisContext";
 import { PipelineExecutor } from "@/lib/agent/PipelineExecutor";
 import { SkillRegistry } from "@/lib/agent/SkillRegistry";
 import { ProgressEmitter } from "@/lib/agent/ProgressEmitter";
-import type { SkillInput } from "@/lib/agent/types";
+import type { SkillInput, McpClient } from "@/lib/agent/types";
 
 const mockMcpClient = {
   callTool: async () => ({ content: [], isError: false }),
   listAllTools: async () => [],
-} as any;
+} satisfies Pick<McpClient, "callTool" | "listAllTools">;
 
 function createExecutor() {
   return new PipelineExecutor(
@@ -29,7 +29,7 @@ function createExecutor() {
       done: () => {},
       result: () => {},
       skills: () => {},
-    } as unknown as ProgressEmitter
+    } as unknown as ProgressEmitter,
   );
 }
 
@@ -38,15 +38,15 @@ describe("PipelineExecutor._evaluateWhen", () => {
     const executor = createExecutor();
     const ctx = new AnalysisContext();
     ctx.set("total_records", 50);
-    (executor as any).context = ctx;
+    (executor as unknown as { context: AnalysisContext }).context = ctx;
 
-    const result = (executor as any)._evaluateWhen(
+    const result = (executor as unknown as { _evaluateWhen: (expr: string, input: SkillInput) => boolean })._evaluateWhen(
       "$context.total_records >= 30",
       { mode: "deep_research", filePath: "", outputDir: "", datasetName: "" } as SkillInput
     );
     expect(result).toBe(true);
 
-    const result2 = (executor as any)._evaluateWhen(
+    const result2 = (executor as unknown as { _evaluateWhen: (expr: string, input: SkillInput) => boolean })._evaluateWhen(
       "$context.total_records >= 100",
       { mode: "deep_research", filePath: "", outputDir: "", datasetName: "" } as SkillInput
     );
@@ -57,8 +57,8 @@ describe("PipelineExecutor._evaluateWhen", () => {
     const executor = createExecutor();
     const ctx = new AnalysisContext();
     ctx.set("has_text_fields", true);
-    (executor as any).context = ctx;
-    const result = (executor as any)._evaluateWhen(
+    (executor as unknown as { context: AnalysisContext }).context = ctx;
+    const result = (executor as unknown as { _evaluateWhen: (expr: string, input: SkillInput) => boolean })._evaluateWhen(
       "$context.has_text_fields",
       { mode: "ai_insights", filePath: "", outputDir: "", datasetName: "" } as SkillInput
     );
@@ -68,8 +68,8 @@ describe("PipelineExecutor._evaluateWhen", () => {
   it("should evaluate undefined as false", () => {
     const executor = createExecutor();
     const ctx = new AnalysisContext();
-    (executor as any).context = ctx;
-    const result = (executor as any)._evaluateWhen(
+    (executor as unknown as { context: AnalysisContext }).context = ctx;
+    const result = (executor as unknown as { _evaluateWhen: (expr: string, input: SkillInput) => boolean })._evaluateWhen(
       "$context.non_existent",
       { mode: "quick_overview", filePath: "", outputDir: "", datasetName: "" } as SkillInput
     );
@@ -79,8 +79,8 @@ describe("PipelineExecutor._evaluateWhen", () => {
   it("should fail-open (return true) on malformed expression", () => {
     const executor = createExecutor();
     const ctx = new AnalysisContext();
-    (executor as any).context = ctx;
-    const result = (executor as any)._evaluateWhen(
+    (executor as unknown as { context: AnalysisContext }).context = ctx;
+    const result = (executor as unknown as { _evaluateWhen: (expr: string, input: SkillInput) => boolean })._evaluateWhen(
       "))(malicious",
       { mode: "quick_overview", filePath: "", outputDir: "", datasetName: "" } as SkillInput
     );

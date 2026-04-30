@@ -1,0 +1,33 @@
+{
+  "fileHash": "63de46c95fb6837b4235462d2f3eff567d7b60c1bd9637c9a605777db27cd237",
+  "mode": "deep_research",
+  "timestamp": "2026-04-30T03:43:54.086Z",
+  "resultUrl": "/data/results/6030724a391d_analysis.json",
+  "deepReportUrl": "/data/results/6030724a391d_deep_research.md",
+  "llmReports": [
+    "6030724a391d_llm_01.md",
+    "6030724a391d_comprehensive.md"
+  ],
+  "likertReports": [
+    "6030724a391d_likert_analysis.json",
+    "6030724a391d_likert_analysis.md"
+  ],
+  "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+  "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+  "researchGapsUrl": "/data/results/gap_research_gap.json",
+  "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+  "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+  "summary": {
+    "records": 694,
+    "fields": 149,
+    "demographics": 8,
+    "usageItems": 9,
+    "likertGroups": 3,
+    "textFields": 1
+  },
+  "tokenUsage": {
+    "prompt_tokens": 28663,
+    "completion_tokens": 16131,
+    "total_tokens": 44794
+  }
+}

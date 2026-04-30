@@ -38,15 +38,13 @@ function UploadedResultContent() {
   const [gapData, setGapData] = useState<ResearchGapData | null>(null);
   const [causalData, setCausalData] = useState<CausalInferenceData | null>(null);
   const [biasData, setBiasData] = useState<SampleBiasData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const hasUrl = !!searchParams.get("url") || !!searchParams.get("deepReport") || !!id;
+  const [loading, setLoading] = useState(hasUrl);
+  const [error, setError] = useState(hasUrl ? "" : "未提供分析结果URL");
   const [analysisMode, setAnalysisMode] = useState<string>("quick_overview");
 
   // LLM report contents
   const [llmContents, setLlmContents] = useState<string[]>([]);
-  const [llmLoading, setLlmLoading] = useState(false);
-  // 内联文本洞察加载状态
-  const [inlineTextLoading, setInlineTextLoading] = useState(false);
   const [inlineTextContents, setInlineTextContents] = useState<{ label: string; content: string }[]>([]);
 
   // 如果提供了 id，从历史记录获取全部 URL（覆盖 query params）
@@ -117,8 +115,6 @@ function UploadedResultContent() {
 
   useEffect(() => {
     if (!resultUrl && !deepReportUrl) {
-      setError("未提供分析结果URL");
-      setLoading(false);
       return;
     }
 
@@ -193,12 +189,11 @@ function UploadedResultContent() {
         console.error("Likert JSON fetch error:", e);
       });
     return () => controller.abort();
-  }, [likertReportsParam]);
+  }, [likertReportsParam, likertReports]);
 
   // Load LLM report contents for inline display
   useEffect(() => {
     if (llmReports.length === 0) return;
-    setLlmLoading(true);
     const controller = new AbortController();
     const fetchers = llmReports.map((r) =>
       fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
@@ -209,15 +204,13 @@ function UploadedResultContent() {
         })
     );
     Promise.all(fetchers)
-      .then((contents) => setLlmContents(contents.filter(Boolean)))
-      .finally(() => setLlmLoading(false));
+      .then((contents) => setLlmContents(contents.filter(Boolean)));
     return () => controller.abort();
-  }, [reportsParam]);
+  }, [reportsParam, llmReports]);
 
   // Load inline text LLM contents (逐题洞察，不含综合报告)
   useEffect(() => {
     if (inlineTextReports.length === 0) return;
-    setInlineTextLoading(true);
     const controller = new AbortController();
     const fetchers = inlineTextReports.map((r) =>
       fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
@@ -226,10 +219,9 @@ function UploadedResultContent() {
         .catch(() => ({ label: r.label, content: "*加载失败*" }))
     );
     Promise.all(fetchers)
-      .then((results) => setInlineTextContents(results))
-      .finally(() => setInlineTextLoading(false));
+      .then((results) => setInlineTextContents(results));
     return () => controller.abort();
-  }, [inlineTextReports.map(r => r.file).join(",")]);
+  }, [inlineTextReports]);
 
   // Load Mode 3 extension data
   useEffect(() => {

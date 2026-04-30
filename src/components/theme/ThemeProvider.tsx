@@ -28,19 +28,20 @@ function getSystemTheme(): "light" | "dark" {
     : "light";
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") return "system";
+  const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
+  return stored ?? "system";
+}
 
-  // Initialize from localStorage + system preference
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial: Theme = stored ?? "system";
-    setThemeState(initial);
-    const resolved = initial === "system" ? getSystemTheme() : initial;
-    setResolvedTheme(resolved);
-    document.documentElement.classList.toggle("dark", resolved === "dark");
-  }, []);
+function getInitialResolvedTheme(theme: Theme): "light" | "dark" {
+  if (typeof window === "undefined") return "light";
+  return theme === "system" ? getSystemTheme() : theme;
+}
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => getInitialResolvedTheme(getInitialTheme()));
 
   // Listen to system preference changes
   useEffect(() => {

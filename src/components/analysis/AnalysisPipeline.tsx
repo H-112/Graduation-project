@@ -7,7 +7,6 @@ import {
   BarChart3,
   TrendingUp,
   Sparkles,
-  BookOpen,
   Search,
   Loader2,
   CheckCircle2,

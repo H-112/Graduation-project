@@ -1,5 +1,72 @@
 [
   {
+    "id": "acff0a2c789d",
+    "type": "analysis",
+    "datasetName": "1.校园巴士服务调查2025春-695.csv",
+    "filePath": "/Users/helh/myfiles/26s/my-graduation-project/data/uploads/6030724a391d.csv",
+    "resultUrl": "/data/results/6030724a391d_analysis.json",
+    "deepReportUrl": "/data/results/6030724a391d_deep_research.md",
+    "llmReports": [
+      "6030724a391d_llm_01.md",
+      "6030724a391d_comprehensive.md"
+    ],
+    "likertReports": [
+      "6030724a391d_likert_analysis.json",
+      "6030724a391d_likert_analysis.md"
+    ],
+    "theoryMappingUrl": "/data/results/theory_theory_mapping.json",
+    "actionableInsightsUrl": "/data/results/actionable_actionable_insights.json",
+    "researchGapsUrl": "/data/results/gap_research_gap.json",
+    "causalHintsUrl": "/data/results/causal_causal_inference_hints.json",
+    "sampleBiasUrl": "/data/results/bias_sample_bias_assessment.json",
+    "mode": "deep_research",
+    "status": "completed",
+    "summary": {
+      "records": 694,
+      "fields": 149,
+      "demographics": 8,
+      "usageItems": 9,
+      "likertGroups": 3,
+      "textFields": 1
+    },
+    "duration_ms": 198191,
+    "apiCalls": 12,
+    "tokenUsage": {
+      "prompt_tokens": 28663,
+      "completion_tokens": 16131,
+      "total_tokens": 44794
+    },
+    "timestamp": "2026-04-30T03:43:54.085Z"
+  },
+  {
+    "id": "03407ed5b4e6",
+    "type": "upload",
+    "datasetName": "2.校园巴士服务调查方案调整-555.csv",
+    "filePath": "/Users/helh/myfiles/26s/my-graduation-project/data/uploads/03407ed5b4e6.csv",
+    "status": "pending",
+    "timestamp": "2026-04-30T03:40:25.059Z"
+  },
+  {
+    "id": "3ac9b6bc2b95",
+    "type": "analysis",
+    "datasetName": "1.校园巴士服务调查2025春-695.csv",
+    "filePath": "/Users/helh/myfiles/26s/my-graduation-project/data/uploads/f697b5825b20.csv",
+    "resultUrl": "/data/results/f697b5825b20_analysis.json",
+    "mode": "quick_overview",
+    "status": "completed",
+    "summary": {
+      "records": 694,
+      "fields": 149,
+      "demographics": 8,
+      "usageItems": 9,
+      "likertGroups": 3,
+      "textFields": 1
+    },
+    "duration_ms": 1202,
+    "apiCalls": 3,
+    "timestamp": "2026-04-30T03:40:02.288Z"
+  },
+  {
     "id": "cd6f03b253be",
     "type": "analysis",
     "datasetName": "3.课堂专注力调查-39.csv",
@@ -1239,101 +1306,5 @@
       "total_tokens": 9235
     },
     "timestamp": "2026-04-25T14:23:47.671Z"
-  },
-  {
-    "id": "532be803615e",
-    "type": "analysis",
-    "datasetName": "25162701_202604242312269507.csv",
-    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/367ce7b1ae90.csv",
-    "resultUrl": "/data/results/367ce7b1ae90_analysis.json",
-    "deepReportUrl": "/data/results/deep_research_deep_research_report.md",
-    "llmReports": [
-      "367ce7b1ae90_comprehensive.md"
-    ],
-    "likertReports": [],
-    "mode": "deep_research",
-    "status": "completed",
-    "summary": {
-      "records": 39,
-      "fields": 25,
-      "demographics": 0,
-      "usageItems": 10,
-      "likertGroups": 0,
-      "textFields": 0
-    },
-    "duration_ms": 82980,
-    "apiCalls": 7,
-    "tokenUsage": {
-      "prompt_tokens": 4887,
-      "completion_tokens": 4258,
-      "total_tokens": 9145
-    },
-    "timestamp": "2026-04-25T14:17:00.769Z"
-  },
-  {
-    "id": "3cf550cb2a46",
-    "type": "analysis",
-    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
-    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/ba3ce4e385af.xlsx",
-    "resultUrl": "/data/results/ba3ce4e385af_analysis.json",
-    "llmReports": [
-      "ba3ce4e385af_llm_01.md",
-      "ba3ce4e385af_comprehensive.md"
-    ],
-    "likertReports": [
-      "ba3ce4e385af_likert_analysis.json",
-      "ba3ce4e385af_likert_analysis.md"
-    ],
-    "mode": "ai_insights",
-    "status": "completed",
-    "summary": {
-      "records": 79,
-      "fields": 31,
-      "demographics": 4,
-      "usageItems": 10,
-      "likertGroups": 1,
-      "textFields": 1
-    },
-    "duration_ms": 79358,
-    "apiCalls": 6,
-    "tokenUsage": {
-      "prompt_tokens": 6051,
-      "completion_tokens": 4488,
-      "total_tokens": 10539
-    },
-    "timestamp": "2026-04-25T14:08:22.384Z"
-  },
-  {
-    "id": "6a60ec72a46e",
-    "type": "analysis",
-    "datasetName": "307505746_按文本_Deco Lounge 需求调查_79_79.xlsx",
-    "filePath": "/Users/helh/myfiles/26s/my graduation project/data/uploads/99e48ccf07f9.xlsx",
-    "resultUrl": "/data/results/99e48ccf07f9_analysis.json",
-    "llmReports": [
-      "99e48ccf07f9_llm_01.md",
-      "99e48ccf07f9_comprehensive.md"
-    ],
-    "likertReports": [
-      "99e48ccf07f9_likert_analysis.json",
-      "99e48ccf07f9_likert_analysis.md"
-    ],
-    "mode": "ai_insights",
-    "status": "completed",
-    "summary": {
-      "records": 79,
-      "fields": 31,
-      "demographics": 4,
-      "usageItems": 10,
-      "likertGroups": 1,
-      "textFields": 1
-    },
-    "duration_ms": 86600,
-    "apiCalls": 6,
-    "tokenUsage": {
-      "prompt_tokens": 6051,
-      "completion_tokens": 4722,
-      "total_tokens": 10773
-    },
-    "timestamp": "2026-04-25T13:57:18.917Z"
   }
 ]

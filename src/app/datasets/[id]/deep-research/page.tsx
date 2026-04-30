@@ -28,7 +28,6 @@ export default function DeepResearchPage() {
   // 加载 Markdown 内容
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
     const controller = new AbortController();
 
     async function load() {
@@ -56,7 +55,6 @@ export default function DeepResearchPage() {
 
         if (!url) {
           setError("未找到深度研究报告");
-          setLoading(false);
           return;
         }
 
@@ -64,7 +62,6 @@ export default function DeepResearchPage() {
         const mdRes = await fetch(url, { signal: controller.signal });
         if (!mdRes.ok) {
           setError(`加载失败: ${mdRes.status}`);
-          setLoading(false);
           return;
         }
 

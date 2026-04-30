@@ -76,13 +76,7 @@ export default function UploadPage() {
     }
   }, [activeJob?.progressLog]);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  }, []);
-
-  const handleFile = async (f: File) => {
+  const handleFile = useCallback(async (f: File) => {
     setFile(f);
     setUploadStatus("uploading");
 
@@ -106,7 +100,13 @@ export default function UploadPage() {
     } catch {
       setUploadStatus("idle");
     }
-  };
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  }, [handleFile]);
 
   const handleAnalyze = () => {
     if (!filePath) return;

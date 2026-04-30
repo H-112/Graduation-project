@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, createWriteStream } from "fs";
+import { createWriteStream, createReadStream } from "fs";
 import { mkdir } from "fs/promises";
 import { pipeline } from "stream/promises";
 import { Readable } from "stream";
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Magic number 验证（防止恶意文件伪装扩展名）
     const header = await new Promise<Buffer>((resolve, reject) => {
-      const stream = require("fs").createReadStream(filepath, { start: 0, end: 7 });
+      const stream = createReadStream(filepath, { start: 0, end: 7 });
       const chunks: Buffer[] = [];
       stream.on("data", (chunk: Buffer) => chunks.push(chunk));
       stream.on("end", () => resolve(Buffer.concat(chunks)));

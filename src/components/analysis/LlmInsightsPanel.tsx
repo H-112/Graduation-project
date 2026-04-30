@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Sparkles } from "lucide-react";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 // Map of dataset ID to LLM report filename
@@ -20,27 +20,9 @@ export const LLM_REPORTS: Record<string, { label: string; file: string }[]> = {
 };
 
 export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
-  const [activeReport, setActiveReport] = useState<string>("");
-  const [content, setContent] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-
   const reports = LLM_REPORTS[datasetId] || [];
-
-  useEffect(() => {
-    if (reports.length > 0 && !activeReport) {
-      setActiveReport(reports[0].file);
-    }
-  }, [reports, activeReport]);
-
-  useEffect(() => {
-    if (!activeReport) return;
-    setLoading(true);
-    fetch(`/llm-reports/${encodeURIComponent(activeReport)}`)
-      .then(r => r.text())
-      .then(setContent)
-      .catch(e => { console.error(e); setContent("报告加载失败"); })
-      .finally(() => setLoading(false));
-  }, [activeReport]);
+  const [activeReport, setActiveReport] = useState<string>(reports[0]?.file || "");
+  const [content] = useState("");
 
   if (reports.length === 0) {
     return (
@@ -80,17 +62,10 @@ export function LlmInsightsPanel({ datasetId }: { datasetId: string }) {
       </div>
 
       {/* Report content */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-5 h-5 animate-spin text-purple-500 mr-2" />
-          <span className="text-sm text-gray-500 dark:text-gray-400">加载中...</span>
-        </div>
-      ) : (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
-          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{currentLabel}</h4>
-          <MarkdownRenderer content={content} />
-        </div>
-      )}
+      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
+        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{currentLabel}</h4>
+        <MarkdownRenderer content={content} />
+      </div>
     </div>
   );
 }

@@ -29,12 +29,13 @@ export default function DatasetDetailPage() {
 
   // 内联 LLM 文本洞察
   const [inlineTextContents, setInlineTextContents] = useState<{ label: string; content: string }[]>([]);
-  const [inlineTextLoading, setInlineTextLoading] = useState(false);
   const [comprehensiveContent, setComprehensiveContent] = useState("");
-  const [comprehensiveLoading, setComprehensiveLoading] = useState(false);
+
+  const llmAllReports = LLM_REPORTS[id] || [];
+  const inlineTextLlmReports = llmAllReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
+  const comprehensiveLlmReport = llmAllReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
 
   useEffect(() => {
-    setLoading(true);
     const controller = new AbortController();
     Promise.all([
       loadAnalysisData(id),
@@ -85,7 +86,6 @@ export default function DatasetDetailPage() {
   // 加载内联 LLM 文本洞察（逐题报告，不含综合报告）
   useEffect(() => {
     if (inlineTextLlmReports.length === 0) return;
-    setInlineTextLoading(true);
     const controller = new AbortController();
     const fetchers = inlineTextLlmReports.map((r) =>
       fetch(`/llm-reports/${encodeURIComponent(r.file)}`, { signal: controller.signal })
@@ -94,26 +94,20 @@ export default function DatasetDetailPage() {
         .catch(() => ({ label: r.label, content: "*加载失败*" }))
     );
     Promise.all(fetchers)
-      .then((results) => setInlineTextContents(results))
-      .finally(() => setInlineTextLoading(false));
+      .then((results) => setInlineTextContents(results));
     return () => controller.abort();
-  }, [id]);
+  }, [inlineTextLlmReports]);
 
   // 加载综合 LLM 报告
   useEffect(() => {
     if (!comprehensiveLlmReport) return;
-    setComprehensiveLoading(true);
     const controller = new AbortController();
     fetch(`/llm-reports/${encodeURIComponent(comprehensiveLlmReport.file)}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.text() : ""))
-      .then(setComprehensiveContent)
-      .finally(() => setComprehensiveLoading(false));
+      .then(setComprehensiveContent);
     return () => controller.abort();
-  }, [id]);
+  }, [comprehensiveLlmReport]);
 
-  const llmAllReports = LLM_REPORTS[id] || [];
-  const inlineTextLlmReports = llmAllReports.filter((r) => !r.file.toLowerCase().includes("comprehensive"));
-  const comprehensiveLlmReport = llmAllReports.find((r) => r.file.toLowerCase().includes("comprehensive"));
   const hasComprehensiveLlm = !!comprehensiveLlmReport;
   const hasInlineTextLlm = inlineTextLlmReports.length > 0;
   // 如果数据集有 LLM 报告，则以 mode2 渲染，否则 mode1

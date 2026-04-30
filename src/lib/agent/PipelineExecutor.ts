@@ -6,7 +6,7 @@
 // ============================================
 
 import type { AnalysisMode } from "../types";
-import type { SkillDefinition, PipelineStep } from "./types";
+import type { SkillDefinition } from "./types";
 import { SkillRegistry } from "./SkillRegistry";
 import { AnalysisContext } from "./AnalysisContext";
 import { ProgressEmitter } from "./ProgressEmitter";
@@ -257,10 +257,7 @@ export class PipelineExecutor {
   /**
    * 执行无 MCP 工具的 Skill — 从 AnalysisContext 提取/验证数据
    */
-  private async _executeContextSkill(
-    _skill: SkillDefinition,
-    _input: SkillInput
-  ): Promise<SkillOutput> {
+  private async _executeContextSkill(): Promise<SkillOutput> {
     return { success: true, data: {} };
   }
 
@@ -515,7 +512,6 @@ export class PipelineExecutor {
     skills: SkillDefinition[],
     failedSet: Set<string>
   ): void {
-    const skillMap = new Map(skills.map((s) => [s.name, s]));
     const queue = [failedName];
 
     while (queue.length > 0) {
