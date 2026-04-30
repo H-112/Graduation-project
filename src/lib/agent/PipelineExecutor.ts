@@ -257,7 +257,10 @@ export class PipelineExecutor {
   /**
    * 执行无 MCP 工具的 Skill — 从 AnalysisContext 提取/验证数据
    */
-  private async _executeContextSkill(): Promise<SkillOutput> {
+  private async _executeContextSkill(
+    _skill: SkillDefinition,
+    _input: SkillInput
+  ): Promise<SkillOutput> {
     return { success: true, data: {} };
   }
 

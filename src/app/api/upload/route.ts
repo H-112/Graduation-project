@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     const header = await new Promise<Buffer>((resolve, reject) => {
       const stream = createReadStream(filepath, { start: 0, end: 7 });
       const chunks: Buffer[] = [];
-      stream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      stream.on("data", (chunk) => chunks.push(chunk as Buffer));
       stream.on("end", () => resolve(Buffer.concat(chunks)));
       stream.on("error", reject);
     });

@@ -7,12 +7,13 @@ import { AnalysisContext } from "@/lib/agent/AnalysisContext";
 import { PipelineExecutor } from "@/lib/agent/PipelineExecutor";
 import { SkillRegistry } from "@/lib/agent/SkillRegistry";
 import { ProgressEmitter } from "@/lib/agent/ProgressEmitter";
-import type { SkillInput, McpClient } from "@/lib/agent/types";
+import type { SkillInput } from "@/lib/agent/types";
+import { McpClient } from "@/lib/mcp/McpClient";
 
 const mockMcpClient = {
   callTool: async () => ({ content: [], isError: false }),
   listAllTools: async () => [],
-} satisfies Pick<McpClient, "callTool" | "listAllTools">;
+} as unknown as McpClient;
 
 function createExecutor() {
   return new PipelineExecutor(
