@@ -254,9 +254,9 @@ async function verifyResults(
 
   // 检查5: 检查进度事件覆盖了所有 Phase 1 Skill
   const expectedSkills = MODE === "ai_insights"
-    ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight", "LlmComprehensiveReport"]
+    ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight"]
     : MODE === "deep_research"
-    ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight", "LlmComprehensiveReport", "DeepResearch"]
+    ? ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis", "LlmTextInsight", "DeepResearch"]
     : ["FileLoading", "LlmStructureAnalysis", "DescriptiveAnalysis"];
 
   const progressStages = new Set(

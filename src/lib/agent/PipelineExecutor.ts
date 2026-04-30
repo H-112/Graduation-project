@@ -148,7 +148,6 @@ export class PipelineExecutor {
           "LlmStructureAnalysis",
           "LlmLikertAnalysis",
           "LlmTextInsight",
-          "LlmComprehensiveReport",
         ].includes(skill.name);
         if (!isBestEffort) {
           // 非 best-effort 技能失败 → 标记后续依赖为跳过
@@ -165,11 +164,10 @@ export class PipelineExecutor {
         err instanceof Error ? err.message : String(err);
       this.emitter.phaseError(skill.name, errMsg);
       const isBestEffort = [
-        "LlmStructureAnalysis",
-        "LlmLikertAnalysis",
-        "LlmTextInsight",
-        "LlmComprehensiveReport",
-      ].includes(skill.name);
+          "LlmStructureAnalysis",
+          "LlmLikertAnalysis",
+          "LlmTextInsight",
+        ].includes(skill.name);
       if (!isBestEffort) {
         failedSkills.add(skill.name);
         this._markDependents(skill.name, this.registry.getApplicableSkills(input.mode), failedSkills);
@@ -187,7 +185,7 @@ export class PipelineExecutor {
     input: SkillInput,
     signal?: AbortSignal
   ): Promise<SkillOutput> {
-    // 无 MCP 工具的 Skill（如 LlmComprehensiveReport）— 从 context 提取数据
+    // 无 MCP 工具的 Skill — 从 context 提取数据
     if (!skill.mcpTools || skill.mcpTools.length === 0) {
       return this._executeContextSkill(skill, input);
     }
@@ -260,49 +258,9 @@ export class PipelineExecutor {
    * 执行无 MCP 工具的 Skill — 从 AnalysisContext 提取/验证数据
    */
   private async _executeContextSkill(
-    skill: SkillDefinition,
+    _skill: SkillDefinition,
     _input: SkillInput
   ): Promise<SkillOutput> {
-    // LlmComprehensiveReport: 从 context 汇总报告信息
-    if (skill.name === "LlmComprehensiveReport") {
-      const reports = this.context.get("reports") as
-        | Array<{ file: string; path: string }>
-        | undefined;
-      const analysis = this.context.get("analysis") as
-        | Record<string, unknown>
-        | undefined;
-
-      if (!reports || reports.length === 0) {
-        return {
-          success: true,
-          data: {
-            hasComprehensiveReport: false,
-            totalReports: 0,
-          },
-        };
-      }
-
-      const compReport = reports.find((r) =>
-        r.file.toLowerCase().includes("comprehensive")
-      );
-      const questionReports = reports.filter(
-        (r) => !r.file.toLowerCase().includes("comprehensive")
-      );
-
-      return {
-        success: true,
-        data: {
-          hasComprehensiveReport: !!compReport,
-          comprehensiveReport: compReport || null,
-          questionReports,
-          totalReports: reports.length,
-          datasetLabel:
-            (analysis?.dataset as string) ||
-            (_input.datasetName || "未知问卷"),
-        },
-      };
-    }
-
     return { success: true, data: {} };
   }
 

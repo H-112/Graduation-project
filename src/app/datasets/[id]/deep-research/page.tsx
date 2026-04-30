@@ -159,7 +159,7 @@ export default function DeepResearchPage() {
         <div className="text-center max-w-md mx-auto px-4">
           <p className="text-red-600 dark:text-red-400 mb-4">{error} 😅</p>
           <Link
-            href={`/datasets/${id}`}
+            href={`/datasets/uploaded?id=${id}`}
             className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
           >
             ← 返回报告概览
@@ -176,7 +176,7 @@ export default function DeepResearchPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href={`/datasets/${id}`}
+              href={`/datasets/uploaded?id=${id}`}
               className="p-2 -ml-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />

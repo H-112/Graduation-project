@@ -9,7 +9,7 @@ description: >
   当前为骨架实现，为后续多轮 Agent 探索预留接口。
 version: "0.1.0"
 applicableModes: [deep_research]
-dependencies: [DescriptiveAnalysis, LlmTextInsight, LlmComprehensiveReport]
+dependencies: [DescriptiveAnalysis, LlmTextInsight]
 mcpTools:
   - server: deep-research-server
     tool: run_deep_research

@@ -46,7 +46,6 @@ const SKILL_ICONS: Record<string, React.ReactNode> = {
   DescriptiveAnalysis: <BarChart3 className="w-4 h-4" />,
   LlmLikertAnalysis: <TrendingUp className="w-4 h-4" />,
   LlmTextInsight: <Sparkles className="w-4 h-4" />,
-  LlmComprehensiveReport: <BookOpen className="w-4 h-4" />,
   DeepResearch: <Search className="w-4 h-4" />,
   ActionableInsight: <Target className="w-3.5 h-3.5" />,
   CausalInferenceHint: <GitBranch className="w-3.5 h-3.5" />,
@@ -97,7 +96,6 @@ const STEPS: Record<AnalysisMode, StepItem[]> = {
     { id: "DescriptiveAnalysis", label: "运行统计分析", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "LlmLikertAnalysis", label: "量表深度解读 (LLM)", icon: <TrendingUp className="w-4 h-4" /> },
     { id: "LlmTextInsight", label: "文本洞察分析 (LLM)", icon: <Sparkles className="w-4 h-4" /> },
-    { id: "LlmComprehensiveReport", label: "生成综合报告", icon: <BookOpen className="w-4 h-4" /> },
   ],
   deep_research: [
     { id: "FileLoading", label: "加载数据文件", icon: <FileSpreadsheet className="w-4 h-4" /> },
@@ -105,7 +103,6 @@ const STEPS: Record<AnalysisMode, StepItem[]> = {
     { id: "DescriptiveAnalysis", label: "运行统计分析", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "LlmLikertAnalysis", label: "量表深度解读 (LLM)", icon: <TrendingUp className="w-4 h-4" /> },
     { id: "LlmTextInsight", label: "文本洞察分析 (LLM)", icon: <Sparkles className="w-4 h-4" /> },
-    { id: "LlmComprehensiveReport", label: "生成综合报告", icon: <BookOpen className="w-4 h-4" /> },
     { id: "DeepResearch", label: "深度研究探索", icon: <Search className="w-4 h-4" /> },
     {
       id: "ParallelInsights",
